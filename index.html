@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Motor Stock</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1a2744">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<style>
+  :root {
+    /* acentos semânticos — iguais nos dois temas */
+    --yellow:     #f5c518;
+    --danger:     #e05252;
+    --success:    #2ecc7a;
+    --elec:       #4fa3e0;
+    --mec:        #5ecf8a;
+    --ai:         #b57bee;
+    --radius:     6px;
+
+    /* ── TEMA ESCURO (padrão) ── */
+    --navy:       #1a2744;
+    --navy-mid:   #243358;
+    --navy-light: #2e4070;
+    --muted:      #8891a4;
+    --white:      #f0f4ff;
+    --bg:         #0f1724;
+    --card-bg:    #151f33;
+    --input-bg:   #0d1526;
+    --grid:       rgba(46,64,112,.5);
+    --input-ph:   #3a4560;
+    --footer-bg:  rgba(0,0,0,.2);
+
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: dark;
+  }
+
+  /* ── TEMA CLARO (via data-theme ou preferência do SO) ── */
+  :root[data-theme="light"] {
+    --navy:       #e9edf5;
+    --navy-mid:   #dfe4ee;
+    --navy-light: #c7cfde;
+    --muted:      #5a6478;
+    --white:      #1a2744;
+    --bg:         #f4f6fb;
+    --card-bg:    #ffffff;
+    --input-bg:   #f0f3f9;
+    --grid:       rgba(90,100,120,.18);
+    --input-ph:   #a8b0c0;
+    --footer-bg:  rgba(0,0,0,.03);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --navy:       #e9edf5;
+      --navy-mid:   #dfe4ee;
+      --navy-light: #c7cfde;
+      --muted:      #5a6478;
+      --white:      #1a2744;
+      --bg:         #f4f6fb;
+      --card-bg:    #ffffff;
+      --input-bg:   #f0f3f9;
+      --grid:       rgba(90,100,120,.18);
+      --input-ph:   #a8b0c0;
+      --footer-bg:  rgba(0,0,0,.03);
+      color-scheme: light;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; color: var(--white); transition: background .2s, color .2s; }
+
+  /* ── FOCO VISÍVEL (acessibilidade AA / teclado) ── */
+  *:focus-visible {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+  button:focus-visible, .tab:focus-visible { outline-offset: 1px; }
+
+  /* ══ HEADER ══ */
+  header {
+    background: var(--navy); border-bottom: 3px solid var(--yellow);
+    padding: 13px 20px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: env(safe-area-inset-top, 0); z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 34px; height: 34px; background: var(--yellow); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 18px; height: 18px; color: var(--navy); }
+  .logo-text h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.05em; }
+  .logo-text span { font-size: 10px; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+  .header-count { background: var(--navy-mid); border: 1px solid var(--navy-light); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--yellow); font-family: 'Share Tech Mono', monospace; }
+  .theme-toggle {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--navy-mid); border: 1px solid var(--navy-light);
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s;
+  }
+  .theme-toggle:hover { color: var(--yellow); border-color: var(--yellow); }
+
+  /* ══ LAYOUT ══ */
+  .main { max-width: 720px; margin: 0 auto; padding: 18px 14px 48px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ══ TABS ══ */
+  .tabs { display: flex; gap: 4px; background: var(--navy); border-radius: var(--radius); padding: 4px; }
+  .tab { flex: 1; padding: 9px; border: none; border-radius: 4px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; font-family: 'Inter', sans-serif; }
+  .tab.active { background: var(--yellow); color: var(--navy); }
+
+  /* ══ BLOCO IA — SCAN ══ */
+  .scan-card {
+    background: linear-gradient(135deg, #1a1535 0%, #151f33 100%);
+    border: 1px solid rgba(181,123,238,.35);
+    border-radius: 10px; overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .scan-header {
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid rgba(181,123,238,.2);
+  }
+  .scan-header .ai-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--ai);
+    box-shadow: 0 0 6px var(--ai);
+  }
+  .scan-header h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ai); }
+  .scan-header small { font-size: 10px; color: var(--muted); margin-left: auto; }
+
+  .scan-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── botão único "Registrar por Imagem" + dropdown ── */
+  .scan-trigger-wrap { position: relative; }
+
+  .btn-scan-trigger {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 18px;
+    background: rgba(181,123,238,.12);
+    border: 1.5px solid rgba(181,123,238,.45);
+    border-radius: 8px;
+    color: var(--ai); font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: background .15s, border-color .15s;
+  }
+  .btn-scan-trigger:hover { background: rgba(181,123,238,.2); border-color: rgba(181,123,238,.8); }
+  .btn-scan-trigger svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .btn-scan-trigger .chevron {
+    width: 14px; height: 14px; margin-left: auto; opacity: .6;
+    transition: transform .2s;
+  }
+  .btn-scan-trigger.open .chevron { transform: rotate(180deg); }
+
+  /* dropdown */
+  .scan-dropdown {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    animation: dropIn .15s ease;
+  }
+  .scan-dropdown.open { display: flex; }
+  @keyframes dropIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+  .scan-opt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    background: rgba(181,123,238,.07);
+    border: 1px solid rgba(181,123,238,.25);
+    border-radius: 7px;
+    color: var(--white); font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: background .12s, border-color .12s;
+  }
+  .scan-opt:hover { background: rgba(181,123,238,.16); border-color: rgba(181,123,238,.55); }
+  .scan-opt svg { width: 20px; height: 20px; color: var(--ai); flex-shrink: 0; }
+  .scan-opt small { font-size: 11px; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
+
+  /* preview da foto */
+  .photo-preview-wrap {
+    display: none;
+    border-radius: 8px; overflow: hidden;
+    border: 1px solid rgba(181,123,238,.3);
+    position: relative;
+  }
+  .photo-preview-wrap.show { display: block; }
+  .photo-preview-wrap img { width: 100%; max-height: 200px; object-fit: cover; display: block; }
+  .photo-clear {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(0,0,0,.7); border: none; border-radius: 50%;
+    width: 24px; height: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+  }
+
+  /* status IA */
+  .ai-status {
+    display: none;
+    align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: rgba(181,123,238,.08);
+    border: 1px solid rgba(181,123,238,.2);
+    border-radius: 6px;
+    font-size: 12px; color: var(--ai);
+  }
+  .ai-status.show { display: flex; }
+  .ai-status .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(181,123,238,.3);
+    border-top-color: var(--ai); border-radius: 50%;
+    animation: spin .7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-result-info {
+    display: none; font-size: 11px; color: var(--muted);
+    padding: 6px 10px;
+    background: rgba(46,204,122,.06);
+    border: 1px solid rgba(46,204,122,.2);
+    border-radius: 6px;
+  }
+  .ai-result-info.show { display: block; }
+  .ai-result-info strong { color: var(--success); }
+
+  .btn-scan-read {
+    display: none; width: 100%;
+    background: var(--ai); color: #fff;
+    border: none; border-radius: var(--radius);
+    padding: 10px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    display: none; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity .15s;
+  }
+  .btn-scan-read.show { display: flex; }
+  .btn-scan-read:hover { opacity: .88; }
+
+  /* inputs com cor IA quando preenchidos por scan */
+  .fg input.filled-by-ai {
+    border-color: rgba(181,123,238,.5) !important;
+    background: rgba(181,123,238,.06) !important;
+  }
+
+  /* ══ FORM CARDS ══ */
+  .fcard { background: var(--card-bg); border: 1px solid var(--navy-light); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+  .fcard:last-of-type { margin-bottom: 0; }
+  .fcard-title { padding: 9px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--navy-light); }
+  .fcard-title .stripe { width: 3px; height: 16px; border-radius: 2px; }
+  .stripe-id   { background: var(--yellow); }
+  .stripe-elec { background: var(--elec); }
+  .stripe-mec  { background: var(--mec); }
+  .fcard-title span { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+  .fcard-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-row.single { grid-template-columns: 1fr; }
+  .fg { display: flex; flex-direction: column; gap: 4px; }
+  .fg label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .fg input {
+    background: var(--input-bg); border: 1px solid var(--navy-light);
+    border-radius: var(--radius); color: var(--white); font-size: 13px;
+    font-family: 'Share Tech Mono', monospace; padding: 8px 11px;
+    outline: none; transition: border-color .15s, box-shadow .15s, background .15s; width: 100%;
+  }
+  .fg input:focus { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(245,197,24,.12); }
+  .fg input::placeholder { color: var(--input-ph); }
+  .fg input.elec:focus { border-color: var(--elec); box-shadow: 0 0 0 2px rgba(79,163,224,.12); }
+  .fg input.mec:focus  { border-color: var(--mec);  box-shadow: 0 0 0 2px rgba(94,207,138,.12); }
+  .polo-hint { min-height: 22px; display: flex; align-items: center; }
+  .polo-badge-form {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(79,163,224,.13);
+    border: 1px solid rgba(79,163,224,.35);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: var(--elec); font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .polo-badge-form svg { width: 11px; height: 11px; }
+
+  /* ══ BOTÕES ══ */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s, transform .1s; font-family: 'Inter', sans-serif; letter-spacing: 0.03em; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--yellow); color: var(--navy); }
+  .btn-primary:hover { background: #e8b800; }
+  .btn-ghost { background: transparent; border: 1px solid var(--navy-light); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--white); }
+  .btn-danger { background: transparent; border: 1px solid #c03a3a; color: var(--danger); }
+  .btn-danger:hover { background: rgba(224,82,82,.1); }
+  .btn-sm { padding: 5px 11px; font-size: 11px; }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px; }
+  .edit-banner {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(245,197,24,.1);
+    border: 1px solid rgba(245,197,24,.35);
+    border-radius: var(--radius);
+    padding: 9px 12px; margin-bottom: 10px;
+    font-size: 12px; color: var(--yellow); font-weight: 600;
+  }
+  .edit-banner svg { flex-shrink: 0; }
+  .edit-banner button {
+    margin-left: auto; background: transparent;
+    border: 1px solid rgba(245,197,24,.4); color: var(--yellow);
+    border-radius: 4px; padding: 3px 10px; font-size: 11px;
+    cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;
+  }
+  .edit-banner button:hover { background: rgba(245,197,24,.15); }
+
+  /* ══ BUSCA ══ */
+  .search-wrap { position: relative; margin-bottom: 14px; }
+  .search-wrap input { width: 100%; background: var(--card-bg); border: 1px solid var(--navy-light); border-radius: var(--radius); color: var(--white); font-size: 13px; font-family: 'Inter', sans-serif; padding: 10px 12px 10px 36px; outline: none; transition: border-color .15s; }
+  .search-wrap input:focus { border-color: var(--yellow); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+  /* ══ NAMEPLATE ══ */
+  .nameplate { background: var(--card-bg); border: 1px solid var(--navy-light); border-radius: 8px; overflow: hidden; transition: border-color .2s; margin-bottom: 10px; }
+  .nameplate:last-child { margin-bottom: 0; }
+  .nameplate:hover { border-color: rgba(245,197,24,.3); }
+  .np-identity { background: var(--navy-mid); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--navy-light); }
+  .np-id-left { display: flex; flex-direction: column; gap: 2px; }
+  .np-id-top  { display: flex; align-items: center; gap: 8px; }
+  .np-tag { font-family: 'Share Tech Mono', monospace; font-size: 12px; font-weight: 700; color: var(--yellow); background: rgba(245,197,24,.12); border: 1px solid rgba(245,197,24,.3); padding: 2px 8px; border-radius: 3px; letter-spacing: 0.06em; }
+  .np-carcaca { font-size: 16px; font-weight: 700; color: var(--white); letter-spacing: 0.05em; }
+  .np-fabricante { font-size: 11px; color: var(--muted); font-family: 'Share Tech Mono', monospace; margin-top: 1px; }
+  .np-actions { display: flex; gap: 6px; }
+  .np-panels { display: grid; grid-template-columns: 1fr 1fr; }
+  .np-panel { padding: 10px 14px 12px; }
+  .np-panel + .np-panel { border-left: 1px solid var(--navy-light); }
+  .np-panel-title { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .np-panel-title .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-elec { background: var(--elec); }
+  .dot-mec  { background: var(--mec); }
+  .np-panel-title span { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .np-panel-title span.elec { color: var(--elec); }
+  .np-panel-title span.mec  { color: var(--mec); }
+  .np-fields { display: flex; flex-direction: column; gap: 7px; }
+  .np-row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .np-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; flex-shrink: 0; }
+  .np-val { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--white); text-align: right; }
+  .np-val.hi { color: var(--yellow); font-weight: 700; }
+  .np-val.elec-col { color: var(--elec); }
+  .np-val.mec-col  { color: var(--mec); }
+  .np-polo-badge { display: inline-block; background: rgba(79,163,224,.12); border: 1px solid rgba(79,163,224,.25); color: var(--elec); font-size: 10px; font-family: 'Share Tech Mono', monospace; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+  .np-footer { padding: 6px 14px; background: var(--footer-bg); border-top: 1px solid var(--navy-light); display: flex; align-items: center; justify-content: space-between; }
+  .np-obs { font-size: 11px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+  .np-date { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #4a5570; }
+
+  /* ══ BOTÃO EXCEL ══ */
+  .btn-excel {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px; border: none; border-radius: var(--radius);
+    background: #1d6f42; color: #fff;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: 'Inter', sans-serif; white-space: nowrap;
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  .btn-excel:hover { background: #165c35; }
+  .btn-excel:active { transform: scale(.97); }
+
+  /* ══ DASHBOARD ══ */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .kpi {
+    position: relative;
+    background: var(--card-bg); border: 1px solid var(--navy-light);
+    border-radius: 8px; padding: 12px 14px 12px 16px;
+    display: flex; flex-direction: column; gap: 3px;
+    overflow: hidden;
+  }
+  /* faixa lateral colorida — etiqueta de painel */
+  .kpi::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--muted);
+  }
+  .kpi-top { display: flex; align-items: center; gap: 6px; }
+  .kpi-top svg { width: 13px; height: 13px; opacity: .8; }
+  .kpi-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .kpi-value { font-size: 23px; font-weight: 700; font-family: 'Share Tech Mono', monospace; color: var(--white); line-height: 1.1; }
+  .kpi-sub   { font-size: 10px; color: var(--muted); }
+  .kpi.kpi-yellow::before { background: var(--yellow); }
+  .kpi.kpi-elec::before   { background: var(--elec); }
+  .kpi.kpi-mec::before    { background: var(--mec); }
+  .kpi.kpi-ai::before     { background: var(--ai); }
+  .kpi.kpi-yellow .kpi-value, .kpi.kpi-yellow .kpi-top svg { color: var(--yellow); }
+  .kpi.kpi-elec   .kpi-value, .kpi.kpi-elec   .kpi-top svg { color: var(--elec); }
+  .kpi.kpi-mec    .kpi-value, .kpi.kpi-mec    .kpi-top svg { color: var(--mec); }
+  .kpi.kpi-ai     .kpi-value, .kpi.kpi-ai     .kpi-top svg { color: var(--ai); }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .dash-card {
+    background: var(--card-bg); border: 1px solid var(--navy-light);
+    border-radius: 8px; padding: 14px;
+  }
+  .dash-card-wide { grid-column: 1 / -1; }
+  .dash-card-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); margin-bottom: 12px;
+  }
+  .dash-empty {
+    padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px;
+  }
+
+  @media (max-width: 500px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-card-wide { grid-column: 1; }
+  }
+
+  /* ══ MISC ══ */
+  .empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+  .empty svg { width: 44px; height: 44px; margin-bottom: 12px; opacity: .3; }
+  .empty p { font-size: 13px; line-height: 1.6; }
+  .toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--success); color: #0d2a1a; font-size: 13px; font-weight: 700; padding: 9px 20px; border-radius: 20px; z-index: 999; transition: transform .25s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--navy); border: 1px solid var(--navy-light); border-radius: 10px; padding: 24px; max-width: 300px; width: 90%; text-align: center; }
+  .modal h3 { font-size: 15px; margin-bottom: 8px; }
+  .modal p  { font-size: 12px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+  /* ══ TELA DE BLOQUEIO (senha de equipe) ══ */
+  .lock-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: var(--bg);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .lock-box {
+    background: var(--card-bg); border: 1px solid var(--navy-light);
+    border-radius: 12px; padding: 32px 26px; max-width: 320px; width: 100%;
+    text-align: center;
+  }
+  .lock-box .lock-logo {
+    width: 54px; height: 54px; border-radius: 50%; background: var(--yellow);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+  }
+  .lock-box .lock-logo svg { width: 28px; height: 28px; color: var(--navy); }
+  .lock-box h2 { font-size: 17px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .lock-box p  { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .lock-box input {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--navy-light);
+    border-radius: var(--radius); color: var(--white); font-size: 14px;
+    font-family: 'Share Tech Mono', monospace; padding: 11px 13px; outline: none;
+    transition: border-color .15s, box-shadow .15s; text-align: center; letter-spacing: 0.1em;
+  }
+  .lock-box input:focus { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(245,197,24,.12); }
+  .lock-msg { min-height: 18px; margin-top: 12px; font-size: 12px; color: var(--danger); }
+
+  /* câmera ao vivo */
+  .camera-wrap { display: none; border-radius: 8px; overflow: hidden; border: 1px solid rgba(181,123,238,.3); position: relative; }
+  .camera-wrap.show { display: block; }
+  .camera-wrap video { width: 100%; max-height: 240px; object-fit: cover; display: block; background: #000; }
+  .camera-controls { display: flex; gap: 8px; padding: 8px; background: rgba(0,0,0,.5); position: absolute; bottom: 0; left: 0; right: 0; justify-content: center; }
+  .cam-btn { border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .cam-capture { background: var(--ai); color: #fff; }
+  .cam-cancel  { background: rgba(255,255,255,.15); color: #fff; }
+
+  @media (max-width: 500px) {
+    .np-panels { grid-template-columns: 1fr; }
+    .np-panel + .np-panel { border-left: none; border-top: 1px solid var(--navy-light); }
+  }
+  @media (max-width: 360px) { .form-row { grid-template-columns: 1fr; } }
+
+  /* inputs ocultos de arquivo */
+  #inputFile, #inputCapture { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <h1>MOTOR STOCK</h1>
+      <span>Estoque de Motores Elétricos</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar tema claro/escuro" aria-label="Alternar tema">
+      <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+    <div class="header-count" id="headerCount">0 motores</div>
+  </div>
+</header>
+
+<!-- inputs ocultos -->
+<input type="file" id="inputFile"    accept="image/*">
+<input type="file" id="inputCapture" accept="image/*" capture="environment">
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('cadastro')">+ Cadastrar</button>
+    <button class="tab" onclick="switchTab('estoque')">Estoque</button>
+    <button class="tab" onclick="switchTab('dashboard')">Dashboard</button>
+  </div>
+
+  <!-- ══ PAINEL CADASTRO ══ -->
+  <div id="paneCadastro">
+
+    <!-- IA SCAN -->
+    <div class="scan-card">
+      <div class="scan-header">
+        <div class="ai-dot"></div>
+        <h3>Leitura por Foto</h3>
+        <small>IA reconhece a placa</small>
+      </div>
+      <div class="scan-body">
+
+        <!-- botão único + dropdown -->
+        <div class="scan-trigger-wrap" id="scanBtns">
+          <button class="btn-scan-trigger" id="btnTrigger" onclick="toggleScanMenu()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Registrar por Imagem
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          <div class="scan-dropdown" id="scanDropdown">
+            <button class="scan-opt" onclick="abrirCamera(); fecharMenu()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <div>
+                Câmera ao vivo
+                <small>Abre a câmera do celular ou webcam</small>
+              </div>
+            </button>
+            <button class="scan-opt" onclick="document.getElementById('inputFile').click(); fecharMenu()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <div>
+                Galeria / Arquivo
+                <small>Seleciona uma foto já tirada</small>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- viewfinder câmera ao vivo -->
+        <div class="camera-wrap" id="cameraWrap">
+          <video id="videoEl" autoplay playsinline muted></video>
+          <div class="camera-controls">
+            <button class="cam-btn cam-cancel" onclick="fecharCamera()" title="Cancelar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <button class="cam-btn cam-capture" onclick="capturarFoto()" title="Tirar foto">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- preview da foto selecionada -->
+        <div class="photo-preview-wrap" id="previewWrap">
+          <img id="previewImg" src="" alt="Foto da placa">
+          <button class="photo-clear" onclick="limparFoto()" title="Remover foto">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- botão Ler Placa -->
+        <button class="btn-scan-read" id="btnLerPlaca" onclick="lerPlacaComIA()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/>
+          </svg>
+          Ler Placa com IA
+        </button>
+
+        <!-- status processamento -->
+        <div class="ai-status" id="aiStatus">
+          <div class="spinner"></div>
+          <span id="aiStatusText">Analisando imagem...</span>
+        </div>
+
+        <!-- resultado -->
+        <div class="ai-result-info" id="aiResultInfo"></div>
+
+      </div>
+    </div>
+
+    <!-- IDENTIFICAÇÃO -->
+    <div class="fcard">
+      <div class="fcard-title"><div class="stripe stripe-id"></div><span>Identificação</span></div>
+      <div class="fcard-body">
+        <div class="form-row">
+          <div class="fg"><label>Nº de Tag</label><input type="text" id="f_tag" placeholder="ex: MOT-001" autocomplete="off"></div>
+          <div class="fg"><label>Carcaça</label><input type="text" id="f_carcaca" placeholder="ex: 132M" autocomplete="off"></div>
+        </div>
+        <div class="form-row single">
+          <div class="fg">
+            <label>Fabricante</label>
+            <input type="text" id="f_fabricante" placeholder="ex: WEG, Siemens, ABB..." list="fabricantesData" autocomplete="off">
+            <datalist id="fabricantesData">
+              <option value="WEG"><option value="Siemens"><option value="ABB">
+              <option value="Voges"><option value="Marelli"><option value="Romagnole">
+              <option value="Leroy Somer"><option value="Baldor"><option value="Toshiba">
+              <option value="Brook Crompton"><option value="Nema">
+            </datalist>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DADOS ELÉTRICOS -->
+    <div class="fcard">
+      <div class="fcard-title"><div class="stripe stripe-elec"></div><span>Dados Elétricos</span></div>
+      <div class="fcard-body">
+        <div class="form-row">
+          <div class="fg"><label>Potência (cv / kW)</label><input type="text" id="f_potencia" placeholder="ex: 5 cv / 3,7 kW" class="elec"></div>
+          <div class="fg"><label>Amperagem (A)</label><input type="text" id="f_amp" placeholder="ex: 9,5 A" class="elec"></div>
+        </div>
+        <div class="form-row single">
+          <div class="fg"><label>Fator de Serviço</label><input type="text" id="f_fs" placeholder="ex: 1,15" class="elec"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DADOS MECÂNICOS -->
+    <div class="fcard">
+      <div class="fcard-title"><div class="stripe stripe-mec"></div><span>Dados Mecânicos</span></div>
+      <div class="fcard-body">
+        <div class="form-row">
+          <div class="fg">
+            <label>RPM</label>
+            <input type="text" id="f_rpm" placeholder="ex: 1750" oninput="calcPolos(this.value)" class="mec">
+            <div class="polo-hint" id="poloHint"></div>
+          </div>
+          <div class="fg"><label>Diâmetro do Eixo (mm)</label><input type="text" id="f_eixo" placeholder="ex: 38 mm" class="mec"></div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="f_flange" onchange="toggleFlange(this.checked)" style="width:17px;height:17px;cursor:pointer;">
+              <span>Motor tem flange?</span>
+            </label>
+          </div>
+          <div class="fg" id="flangeFurosWrap" style="display:none">
+            <label>Quantos furos?</label>
+            <input type="number" id="f_flangeFuros" min="0" step="1" placeholder="ex: 4" class="mec" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="fg">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="f_baseFixacao" style="width:17px;height:17px;cursor:pointer;">
+              <span>Motor tem base de fixação?</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSERVAÇÕES -->
+    <div class="fcard">
+      <div class="fcard-title"><div class="stripe" style="background:var(--muted)"></div><span>Observações</span></div>
+      <div class="fcard-body">
+        <div class="form-row single">
+          <div class="fg"><input type="text" id="f_obs" placeholder="ex: motor reserva, sem mancal, 220/380V..."></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-banner" id="editBanner" style="display:none">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Modo edição — você está alterando um motor existente
+      <button onclick="clearForm()" title="Cancelar edição">Cancelar</button>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="clearForm()">Limpar</button>
+      <button class="btn btn-primary" id="btnSalvar" onclick="saveMotor()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        <span class="btn-label">Cadastrar Motor</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PAINEL ESTOQUE ══ -->
+  <div id="paneEstoque" style="display:none;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+      <div class="search-wrap" style="flex:1;margin-bottom:0;">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Buscar por tag, carcaça, fabricante, RPM..." oninput="renderList()">
+      </div>
+      <button class="btn-excel" onclick="exportarExcel()" title="Exportar para Excel">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <polyline points="9 14 12 17 15 14"/>
+        </svg>
+        Excel
+      </button>
+    </div>
+    <div class="section-label" id="listLabel"></div>
+    <div id="motorList"></div>
+  </div>
+
+  <!-- ══ PAINEL DASHBOARD ══ -->
+  <div id="paneDashboard" style="display:none;">
+
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <!-- Gráficos -->
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="dash-card-title">Motores por Fabricante</div>
+        <canvas id="chartFabricante"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Motores por Nº de Polos</div>
+        <canvas id="chartPolos"></canvas>
+      </div>
+      <div class="dash-card dash-card-wide">
+        <div class="dash-card-title">Distribuição por Potência (cv/kW)</div>
+        <canvas id="chartPotencia"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Motores por Carcaça</div>
+        <canvas id="chartCarcaca"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Cadastros por Mês</div>
+        <canvas id="chartMes"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ══ TELA DE BLOQUEIO — senha de equipe (aparece só quando o Firebase está configurado) ══ -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
+      </svg>
+    </div>
+    <h2>MOTOR STOCK</h2>
+    <p>Acesso restrito à equipe</p>
+    <input type="password" id="lockPass" placeholder="senha da equipe" autocomplete="off"
+           onkeydown="if(event.key==='Enter') tentarLogin()">
+    <button class="btn btn-primary" id="lockBtn" style="width:100%;margin-top:12px;" onclick="tentarLogin()">Entrar</button>
+    <div class="lock-msg" id="lockMsg"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>Remover motor?</h3>
+    <p id="modalDesc">Esta ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Remover</button>
+    </div>
+  </div>
+</div>
+
+<!-- canvas oculto para captura de frame da câmera -->
+<canvas id="snapCanvas" style="display:none"></canvas>
+
+<!-- Chart.js (local — sem CDN em runtime) -->
+<script src="/lib/chart.umd.min.js"></script>
+<!-- SheetJS para exportar Excel (local — sem CDN em runtime) -->
+<script src="/lib/xlsx.full.min.js"></script>
+
+<script>
+  /* ══════════════════════════════════════════
+     DADOS — camada de persistência (Store)
+     Começa em modo LOCAL (localStorage). Quando o Firebase conecta e o
+     usuário autentica (Passo 4), o módulo no fim do arquivo troca
+     window.Store para o modo NUVEM (Firestore) e sincroniza em tempo real.
+  ══════════════════════════════════════════ */
+  var motors = [];                 // var (= window.motors) p/ o módulo Firebase enxergar
+  const LOCAL_KEY = 'motors_stock';
+  let deleteTarget = null;
+  let editingId  = null;   // id do motor em edição (null = novo cadastro)
+  let fotoBase64 = null;   // base64 da foto atual (sem prefixo data:)
+  let fotoMime   = 'image/jpeg';
+  let stream     = null;   // MediaStream da câmera
+
+  const hojeBR = () => new Date().toLocaleDateString('pt-BR');
+  function mirrorLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(motors)); } catch {} }
+
+  // re-render de tudo que depende da lista (chamado a cada mudança de dados)
+  function onMotorsChanged() {
+    updateCount();
+    if (document.getElementById('paneEstoque').style.display   !== 'none') renderList();
+    if (document.getElementById('paneDashboard').style.display !== 'none') renderDashboard();
+  }
+
+  // ── Store LOCAL (fallback / testes sem Firebase) ──
+  const LocalStore = {
+    mode: 'local',
+    start() {
+      try { motors = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch { motors = []; }
+      onMotorsChanged();
+    },
+    add(data) {
+      motors.unshift({ id: 'loc-' + Date.now(), ...data, createdAt: hojeBR(), createdTS: Date.now() });
+      mirrorLocal(); onMotorsChanged();
+    },
+    update(id, data) {
+      const i = motors.findIndex(m => m.id === id);
+      if (i >= 0) { motors[i] = { ...motors[i], ...data, updatedAt: hojeBR() }; mirrorLocal(); onMotorsChanged(); }
+    },
+    remove(id) { motors = motors.filter(m => m.id !== id); mirrorLocal(); onMotorsChanged(); }
+  };
+
+  window.Store = LocalStore;   // trocado p/ FirebaseStore pelo módulo, se configurado
+
+  /* ══════════════════════════════════════════
+     SEGURANÇA — escape de HTML (anti-XSS)
+  ══════════════════════════════════════════ */
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  /* ══════════════════════════════════════════
+     TEMA CLARO / ESCURO
+  ══════════════════════════════════════════ */
+  function applyTheme(theme) {
+    if (theme === 'light' || theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', theme);
+    } else {
+      document.documentElement.removeAttribute('data-theme'); // segue o SO
+    }
+    const isLight = getComputedStyle(document.documentElement).getPropertyValue('color-scheme').trim() === 'light';
+    document.querySelector('.icon-moon').style.display = isLight ? 'none'  : 'block';
+    document.querySelector('.icon-sun').style.display  = isLight ? 'block' : 'none';
+  }
+  function toggleTheme() {
+    const css = getComputedStyle(document.documentElement);
+    const isLight = css.getPropertyValue('color-scheme').trim() === 'light';
+    const next = isLight ? 'dark' : 'light';
+    localStorage.setItem('motor_theme', next);
+    applyTheme(next);
+    if (document.getElementById('paneDashboard').style.display !== 'none') renderDashboard();
+  }
+  applyTheme(localStorage.getItem('motor_theme'));
+
+  /* ══════════════════════════════════════════
+     TABS
+  ══════════════════════════════════════════ */
+  function switchTab(tab) {
+    const tabs = ['cadastro','estoque','dashboard'];
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+    document.getElementById('paneCadastro').style.display   = tab==='cadastro'  ? 'block' : 'none';
+    document.getElementById('paneEstoque').style.display    = tab==='estoque'   ? 'block' : 'none';
+    document.getElementById('paneDashboard').style.display  = tab==='dashboard' ? 'block' : 'none';
+    if (tab==='estoque')   renderList();
+    if (tab==='dashboard') renderDashboard();
+  }
+
+  /* ══════════════════════════════════════════
+     DASHBOARD
+  ══════════════════════════════════════════ */
+  let _charts = {};
+
+  function destroyChart(id) {
+    if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+  }
+
+  function renderDashboard() {
+    if (!motors.length) {
+      document.getElementById('kpiRow').innerHTML =
+        '<div class="dash-empty" style="grid-column:1/-1">Nenhum motor cadastrado ainda.</div>';
+      ['chartFabricante','chartPolos','chartPotencia','chartCarcaca','chartMes']
+        .forEach(id => { const c=document.getElementById(id); if(c) c.parentElement.innerHTML=`<div class="dash-card-title">${c.parentElement.querySelector('.dash-card-title').textContent}</div><div class="dash-empty">Sem dados</div>`; });
+      return;
+    }
+
+    // ── KPIs ──
+    const totalMotores = motors.length;
+    const fabricantes  = [...new Set(motors.map(m=>m.fabricante||'—').filter(Boolean))];
+    const potencias    = motors.map(m => parsePot(m.potencia)).filter(v=>v>0);
+    const potMedia     = potencias.length ? (potencias.reduce((a,b)=>a+b,0)/potencias.length).toFixed(1) : '—';
+    const ultimoCad    = motors[0]?.createdAt || '—';
+
+    document.getElementById('kpiRow').innerHTML = `
+      <div class="kpi kpi-yellow">
+        <div class="kpi-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+          <span class="kpi-label">Total de Motores</span>
+        </div>
+        <div class="kpi-value">${totalMotores}</div><div class="kpi-sub">cadastrados</div>
+      </div>
+      <div class="kpi kpi-elec">
+        <div class="kpi-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+          <span class="kpi-label">Fabricantes</span>
+        </div>
+        <div class="kpi-value">${fabricantes.length}</div><div class="kpi-sub">diferentes</div>
+      </div>
+      <div class="kpi kpi-mec">
+        <div class="kpi-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="kpi-label">Potência Média</span>
+        </div>
+        <div class="kpi-value">${potMedia}</div><div class="kpi-sub">cv (estimado)</div>
+      </div>
+      <div class="kpi kpi-ai">
+        <div class="kpi-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span class="kpi-label">Último Cadastro</span>
+        </div>
+        <div class="kpi-value" style="font-size:15px;margin-top:2px">${ultimoCad}</div><div class="kpi-sub">&nbsp;</div>
+      </div>
+    `;
+
+    const COLORS = ['#4fa3e0','#5ecf8a','#f5c518','#b57bee','#e05252','#f0984a','#50d9d0','#e06bb5','#8891a4','#aad4f5'];
+    const css = getComputedStyle(document.documentElement);
+    const gridColor   = css.getPropertyValue('--grid').trim()    || 'rgba(46,64,112,.5)';
+    const textColor   = css.getPropertyValue('--muted').trim()   || '#8891a4';
+    const cardBgColor = css.getPropertyValue('--card-bg').trim() || '#151f33';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+
+    // ── GRÁFICO 1: por Fabricante ──
+    destroyChart('fab');
+    const fabCount = {};
+    motors.forEach(m => { const f=m.fabricante||'Sem info'; fabCount[f]=(fabCount[f]||0)+1; });
+    const fabSorted = Object.entries(fabCount).sort((a,b)=>b[1]-a[1]);
+    _charts['fab'] = new Chart(document.getElementById('chartFabricante'), {
+      type: 'bar',
+      data: {
+        labels: fabSorted.map(([k])=>k),
+        datasets:[{ data: fabSorted.map(([,v])=>v), backgroundColor: COLORS, borderRadius: 4, borderSkipped: false }]
+      },
+      options: {
+        plugins:{ legend:{display:false} },
+        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}} },
+        responsive:true, maintainAspectRatio:true
+      }
+    });
+
+    // ── GRÁFICO 2: por Polos ──
+    destroyChart('pol');
+    const polCount = {};
+    motors.forEach(m => {
+      const p = m.polos || getPolos(m.rpm) || 'N/D';
+      polCount[p]=(polCount[p]||0)+1;
+    });
+    const polSorted = Object.entries(polCount).sort((a,b)=>a[0].localeCompare(b[0]));
+    _charts['pol'] = new Chart(document.getElementById('chartPolos'), {
+      type: 'doughnut',
+      data: {
+        labels: polSorted.map(([k])=>k),
+        datasets:[{ data: polSorted.map(([,v])=>v), backgroundColor: COLORS, borderWidth:2, borderColor: cardBgColor }]
+      },
+      options: {
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:10, font:{size:11} } } },
+        responsive:true, maintainAspectRatio:true, cutout:'60%'
+      }
+    });
+
+    // ── GRÁFICO 3: por Potência (histograma de faixas) ──
+    destroyChart('pot');
+    const faixas = {'< 1 cv':0,'1–5 cv':0,'5–10 cv':0,'10–25 cv':0,'25–50 cv':0,'50–100 cv':0,'> 100 cv':0,'N/D':0};
+    motors.forEach(m => {
+      const v = parsePot(m.potencia);
+      if (!v)           faixas['N/D']++;
+      else if (v<1)     faixas['< 1 cv']++;
+      else if (v<5)     faixas['1–5 cv']++;
+      else if (v<10)    faixas['5–10 cv']++;
+      else if (v<25)    faixas['10–25 cv']++;
+      else if (v<50)    faixas['25–50 cv']++;
+      else if (v<100)   faixas['50–100 cv']++;
+      else              faixas['> 100 cv']++;
+    });
+    _charts['pot'] = new Chart(document.getElementById('chartPotencia'), {
+      type: 'bar',
+      data: {
+        labels: Object.keys(faixas),
+        datasets:[{ data: Object.values(faixas), backgroundColor:'#4fa3e0', borderRadius:4, borderSkipped:false }]
+      },
+      options: {
+        plugins:{ legend:{display:false} },
+        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}} },
+        responsive:true, maintainAspectRatio:false
+      }
+    });
+    document.getElementById('chartPotencia').style.height = '160px';
+
+    // ── GRÁFICO 4: por Carcaça ──
+    destroyChart('car');
+    const carCount = {};
+    motors.forEach(m => { const c=m.carcaca||'N/D'; carCount[c]=(carCount[c]||0)+1; });
+    const carSorted = Object.entries(carCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    _charts['car'] = new Chart(document.getElementById('chartCarcaca'), {
+      type: 'bar',
+      data: {
+        labels: carSorted.map(([k])=>k),
+        datasets:[{ data: carSorted.map(([,v])=>v), backgroundColor:'#5ecf8a', borderRadius:4, borderSkipped:false }]
+      },
+      options: {
+        indexAxis:'y',
+        plugins:{ legend:{display:false} },
+        scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1}}, y:{grid:{display:false}} },
+        responsive:true, maintainAspectRatio:true
+      }
+    });
+
+    // ── GRÁFICO 5: por Mês de Cadastro ──
+    destroyChart('mes');
+    const mesCount = {};
+    motors.forEach(m => {
+      if (!m.createdAt) return;
+      const parts = m.createdAt.split('/');
+      if (parts.length===3) {
+        const key = parts[1]+'/'+parts[2]; // MM/AAAA
+        mesCount[key]=(mesCount[key]||0)+1;
+      }
+    });
+    const mesSorted = Object.entries(mesCount).sort((a,b)=>a[0].localeCompare(b[0]));
+    _charts['mes'] = new Chart(document.getElementById('chartMes'), {
+      type: 'line',
+      data: {
+        labels: mesSorted.map(([k])=>k),
+        datasets:[{
+          data: mesSorted.map(([,v])=>v),
+          borderColor:'#b57bee', backgroundColor:'rgba(181,123,238,.12)',
+          tension:.35, fill:true, pointRadius:4, pointBackgroundColor:'#b57bee'
+        }]
+      },
+      options: {
+        plugins:{ legend:{display:false} },
+        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}} },
+        responsive:true, maintainAspectRatio:true
+      }
+    });
+  }
+
+  // extrai valor numérico de potência em cv
+  // Converte a potência da placa para cv. Placas costumam trazer "5 cv / 3,7 kW";
+  // priorizamos o valor em cv/hp quando houver; senão, convertemos o valor em kW.
+  function parsePot(str) {
+    if (!str) return 0;
+    const s = str.toLowerCase().replace(',', '.');
+
+    // 1) número explicitamente seguido de cv, hp ou c.v.
+    const cv = s.match(/(\d+\.?\d*)\s*(cv|hp|c\.?v\.?)/);
+    if (cv) return parseFloat(cv[1]);
+
+    // 2) número explicitamente seguido de kw → converte (1 cv = 0,7355 kW)
+    const kw = s.match(/(\d+\.?\d*)\s*kw/);
+    if (kw) return parseFloat(kw[1]) / 0.7355;
+
+    // 3) sem unidade: assume cv (padrão BR em motores)
+    const num = s.match(/(\d+\.?\d*)/);
+    return num ? parseFloat(num[1]) : 0;
+  }
+
+  /* ══════════════════════════════════════════
+     EXPORTAR EXCEL (SheetJS)
+  ══════════════════════════════════════════ */
+  function exportarExcel() {
+    if (!motors.length) { flash('⚠ Nenhum motor para exportar'); return; }
+
+    const wb = XLSX.utils.book_new();
+
+    // ── Aba 1: Listagem completa ──
+    const cabecalho = ['Tag','Carcaça','Fabricante','Potência','Amperagem','Fator de Serviço','RPM','Polos','Eixo Ø (mm)','Observações','Data Cadastro'];
+    const linhas = motors.map(m => [
+      m.tag||'', m.carcaca||'', m.fabricante||'', m.potencia||'',
+      m.amp||'', m.fs||'', m.rpm||'', m.polos||getPolos(m.rpm)||'',
+      m.eixo||'', m.obs||'', m.createdAt||''
+    ]);
+    const ws1 = XLSX.utils.aoa_to_sheet([cabecalho, ...linhas]);
+
+    // larguras de coluna
+    ws1['!cols'] = [8,10,14,12,10,14,8,8,12,30,12].map(w=>({wch:w}));
+
+    // estilo do cabeçalho (SheetJS CE não suporta estilos nativos, mas define freezerow)
+    ws1['!freeze'] = { xSplit:0, ySplit:1 };
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Motores');
+
+    // ── Aba 2: Resumo por Fabricante ──
+    const fabMap = {};
+    motors.forEach(m => { const f=m.fabricante||'Sem info'; fabMap[f]=(fabMap[f]||0)+1; });
+    const ws2 = XLSX.utils.aoa_to_sheet([
+      ['Fabricante','Qtd. Motores','% do Total'],
+      ...Object.entries(fabMap).sort((a,b)=>b[1]-a[1]).map(([f,q])=>[f,q,`${((q/motors.length)*100).toFixed(1)}%`]),
+      ['TOTAL', motors.length, '100%']
+    ]);
+    ws2['!cols'] = [{wch:18},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Resumo Fabricantes');
+
+    // ── Aba 3: Resumo por Polos ──
+    const polMap = {};
+    motors.forEach(m => { const p=m.polos||getPolos(m.rpm)||'N/D'; polMap[p]=(polMap[p]||0)+1; });
+    const ws3 = XLSX.utils.aoa_to_sheet([
+      ['Nº de Polos','Qtd. Motores','% do Total'],
+      ...Object.entries(polMap).sort().map(([p,q])=>[p,q,`${((q/motors.length)*100).toFixed(1)}%`]),
+      ['TOTAL', motors.length, '100%']
+    ]);
+    ws3['!cols'] = [{wch:14},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Resumo Polos');
+
+    // ── download ──
+    const data = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+    XLSX.writeFile(wb, `MotorStock_${data}.xlsx`);
+    flash('✓ Excel gerado com sucesso');
+  }
+
+  /* ══════════════════════════════════════════
+     MENU DROPDOWN DE SCAN
+  ══════════════════════════════════════════ */
+  function toggleScanMenu() {
+    const dropdown = document.getElementById('scanDropdown');
+    const btn      = document.getElementById('btnTrigger');
+    const isOpen   = dropdown.classList.contains('open');
+    if (isOpen) {
+      dropdown.classList.remove('open');
+      btn.classList.remove('open');
+    } else {
+      dropdown.classList.add('open');
+      btn.classList.add('open');
+    }
+  }
+  function fecharMenu() {
+    document.getElementById('scanDropdown').classList.remove('open');
+    document.getElementById('btnTrigger').classList.remove('open');
+  }
+  // fecha ao clicar fora
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('scanBtns');
+    if (wrap && !wrap.contains(e.target)) fecharMenu();
+  });
+
+  /* ══════════════════════════════════════════
+     CÂMERA AO VIVO
+  ══════════════════════════════════════════ */
+  async function abrirCamera() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      document.getElementById('videoEl').srcObject = stream;
+      document.getElementById('cameraWrap').classList.add('show');
+      document.getElementById('scanBtns').style.display = 'none';
+    } catch(e) {
+      // fallback: input com capture
+      document.getElementById('inputCapture').click();
+    }
+  }
+
+  function fecharCamera() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    document.getElementById('cameraWrap').classList.remove('show');
+    document.getElementById('scanBtns').style.display = '';
+  }
+
+  async function capturarFoto() {
+    const video  = document.getElementById('videoEl');
+    const canvas = document.getElementById('snapCanvas');
+    canvas.width  = video.videoWidth  || 1280;
+    canvas.height = video.videoHeight || 720;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const raw = canvas.toDataURL('image/jpeg', .92);
+    fecharCamera();
+    try {
+      aplicarFoto(await comprimirImagem(raw));   // comprime antes de guardar
+    } catch (e) {
+      flash('⚠ Erro ao processar a foto');
+    }
+    resetAiUI();
+  }
+
+  /* ══════════════════════════════════════════
+     UPLOAD DE ARQUIVO
+  ══════════════════════════════════════════ */
+  function setupFileInput(inputId) {
+    document.getElementById(inputId).addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        comprimirImagem(ev.target.result)       // comprime antes de guardar
+          .then(out => { aplicarFoto(out); resetAiUI(); })
+          .catch(() => flash('⚠ Erro ao processar a imagem'));
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+  }
+  setupFileInput('inputFile');
+  setupFileInput('inputCapture');
+
+  function limparFoto() {
+    fotoBase64 = null;
+    document.getElementById('previewWrap').classList.remove('show');
+    document.getElementById('previewImg').src = '';
+    document.getElementById('btnLerPlaca').classList.remove('show');
+    resetAiUI();
+  }
+
+  function resetAiUI() {
+    document.getElementById('aiStatus').classList.remove('show');
+    document.getElementById('aiResultInfo').classList.remove('show');
+    document.querySelectorAll('.fg input').forEach(i => i.classList.remove('filled-by-ai'));
+  }
+
+  /* ══════════════════════════════════════════
+     COMPRESSÃO DE IMAGEM (padrão das fotos de NC do SGI)
+     Reduz o maior lado e reencoda em JPEG, baixando a qualidade até caber
+     no teto — a foto da placa fica leve o bastante pro limite da Function.
+  ══════════════════════════════════════════ */
+  const IMG_MAX_DIM   = 1600;                 // maior lado, em px
+  const IMG_JPEG_Q    = 0.82;                 // qualidade inicial
+  const IMG_MAX_BYTES = 3.5 * 1024 * 1024;    // teto do base64 enviado (~folga sob o limite ~6 MB do Netlify)
+
+  function comprimirImagem(srcDataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, IMG_MAX_DIM / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width  * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        let q = IMG_JPEG_Q;
+        let dataUrl = canvas.toDataURL('image/jpeg', q);
+        // se ainda estourar o teto, baixa a qualidade progressivamente
+        while (dataUrl.length > IMG_MAX_BYTES && q > 0.4) {
+          q -= 0.12;
+          dataUrl = canvas.toDataURL('image/jpeg', q);
+        }
+        resolve({ dataUrl, base64: dataUrl.split(',')[1], mime: 'image/jpeg', w, h });
+      };
+      img.onerror = () => reject(new Error('Falha ao carregar a imagem'));
+      img.src = srcDataUrl;
+    });
+  }
+
+  // aplica a foto (já comprimida) na UI + estado
+  function aplicarFoto(out) {
+    fotoBase64 = out.base64;
+    fotoMime   = out.mime;
+    document.getElementById('previewImg').src = out.dataUrl;
+    document.getElementById('previewWrap').classList.add('show');
+    document.getElementById('btnLerPlaca').classList.add('show');
+  }
+
+  /* ══════════════════════════════════════════
+     LEITURA COM IA — CLAUDE VISION
+  ══════════════════════════════════════════ */
+  async function lerPlacaComIA() {
+    if (!fotoBase64) return;
+    if (fotoBase64.length > IMG_MAX_BYTES) { flash('⚠ Imagem muito grande — tire a foto de novo'); return; }
+
+    const statusEl = document.getElementById('aiStatus');
+    const statusTxt = document.getElementById('aiStatusText');
+    const resultEl  = document.getElementById('aiResultInfo');
+    const btnLer    = document.getElementById('btnLerPlaca');
+
+    statusTxt.textContent = 'Analisando imagem...';
+    statusEl.classList.add('show');
+    resultEl.classList.remove('show');
+    btnLer.disabled = true;
+
+    try {
+      statusTxt.textContent = 'Enviando para análise...';
+      // A IA roda na Netlify Function (Cloudflare Workers AI). A chave fica no servidor,
+      // nunca no navegador. A Function devolve o objeto de campos já validado.
+      const resp = await fetch('/.netlify/functions/ler-placa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imagem: fotoBase64, mime: fotoMime })
+      });
+
+      statusTxt.textContent = 'Interpretando dados...';
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(()=>({}));
+        throw new Error(err?.erro || ('Erro na IA (HTTP ' + resp.status + ')'));
+      }
+
+      const campos = await resp.json();
+
+      // preenche os campos
+      const mapa = { tag:'f_tag', carcaca:'f_carcaca', fabricante:'f_fabricante',
+                     potencia:'f_potencia', amp:'f_amp', fs:'f_fs',
+                     rpm:'f_rpm', eixo:'f_eixo', obs:'f_obs' };
+
+      let preenchidos = 0;
+      for (const [campo, inputId] of Object.entries(mapa)) {
+        if (campos[campo]) {
+          const el = document.getElementById(inputId);
+          el.value = String(campos[campo]);
+          el.classList.add('filled-by-ai');
+          preenchidos++;
+          if (campo === 'rpm') calcPolos(el.value);
+        }
+      }
+
+      statusEl.classList.remove('show');
+      btnLer.disabled = false;
+
+      if (preenchidos === 0) {
+        resultEl.innerHTML = '⚠ Nenhum dado reconhecido. Tente uma foto mais próxima e nítida da placa.';
+        resultEl.classList.add('show');
+      } else {
+        resultEl.innerHTML = `<strong>✓ ${preenchidos} campo${preenchidos>1?'s':''} preenchido${preenchidos>1?'s':''}</strong> — Campos em roxo foram preenchidos pela IA. Verifique e ajuste se necessário.`;
+        resultEl.classList.add('show');
+        flash(`✓ IA preencheu ${preenchidos} campo${preenchidos>1?'s':''}`);
+      }
+
+    } catch(err) {
+      console.error(err);
+      statusEl.classList.remove('show');
+      btnLer.disabled = false;
+      resultEl.innerHTML = '✗ Erro ao processar: ' + (err.message || 'tente novamente');
+      resultEl.classList.add('show');
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     POLOS
+  ══════════════════════════════════════════ */
+  function calcPolos(rpm) {
+    const r = parseFloat((rpm||'').replace(',','.'));
+    const hint = document.getElementById('poloHint');
+    if (!r||r<=0){ hint.innerHTML=''; return; }
+    const map=[{s:3600,p:2},{s:1800,p:4},{s:1200,p:6},{s:900,p:8},{s:720,p:10},{s:600,p:12}];
+    let best=null,bd=Infinity;
+    for(const f of map){const d=Math.abs(f.s-r);if(d<bd&&r<f.s*1.02){bd=d;best=f;}}
+    if (best) {
+      hint.innerHTML = `<span class="polo-badge-form">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
+        </svg>
+        ${best.p} polos &nbsp;·&nbsp; sincrono ${best.s} RPM
+      </span>`;
+    } else {
+      hint.innerHTML = '';
+    }
+  }
+  function getPolos(rpm){
+    const r=parseFloat((rpm||'').replace(',','.'));
+    if(!r||r<=0) return '';
+    const map=[{s:3600,p:2},{s:1800,p:4},{s:1200,p:6},{s:900,p:8},{s:720,p:10},{s:600,p:12}];
+    let best=null,bd=Infinity;
+    for(const f of map){const d=Math.abs(f.s-r);if(d<bd&&r<f.s*1.02){bd=d;best=f;}}
+    return best ? best.p+'P' : '';
+  }
+
+  // mostra/esconde o campo "Quantos furos?" conforme o checkbox de flange
+  function toggleFlange(checked) {
+    const wrap = document.getElementById('flangeFurosWrap');
+    if (wrap) wrap.style.display = checked ? 'block' : 'none';
+    if (!checked) { const f = document.getElementById('f_flangeFuros'); if (f) f.value = ''; }
+  }
+
+  /* ══════════════════════════════════════════
+     SALVAR MOTOR
+  ══════════════════════════════════════════ */
+  async function saveMotor() {
+    const carcaca = document.getElementById('f_carcaca').value.trim();
+    if (!carcaca){flash('⚠ Informe a Carcaça');return;}
+    const potencia = document.getElementById('f_potencia').value.trim();
+    if (!potencia){flash('⚠ Informe a Potência');return;}
+
+    const tag = document.getElementById('f_tag').value.trim().toUpperCase();
+
+    // checa tag duplicada (ignora o próprio motor em edição)
+    if (tag) {
+      const dup = motors.find(m => (m.tag||'').toUpperCase() === tag && m.id !== editingId);
+      if (dup) {
+        if (!confirm(`Já existe um motor com a tag "${tag}" (carcaça ${dup.carcaca}).\n\nDeseja cadastrar mesmo assim?`)) return;
+      }
+    }
+
+    const rpm = document.getElementById('f_rpm').value.trim();
+    const flange      = document.getElementById('f_flange').checked;
+    const baseFixacao = document.getElementById('f_baseFixacao').checked;
+    const dados = {
+      tag,
+      carcaca:   carcaca.toUpperCase(),
+      fabricante:document.getElementById('f_fabricante').value.trim(),
+      potencia,
+      amp:       document.getElementById('f_amp').value.trim(),
+      fs:        document.getElementById('f_fs').value.trim(),
+      rpm, polos: getPolos(rpm),
+      eixo:      document.getElementById('f_eixo').value.trim(),
+      obs:       document.getElementById('f_obs').value.trim(),
+      flange, baseFixacao,
+    };
+    // flangeFuros: number, só quando "tem flange" está marcado e um valor válido foi informado
+    if (flange) {
+      const n = parseInt(document.getElementById('f_flangeFuros').value, 10);
+      if (Number.isFinite(n) && n >= 0) dados.flangeFuros = n;
+    }
+
+    // trava o botão enquanto grava, pra não duplicar no clique duplo
+    const btnSave = document.getElementById('btnSalvar');
+    if (btnSave) btnSave.disabled = true;
+
+    try {
+      if (editingId) {
+        // ── edição in-place: preserva id e data de criação ──
+        await Store.update(editingId, dados);   // AGUARDA de verdade: se o Firestore rejeitar, cai no catch
+        flash('✓ Motor atualizado');
+        editingId = null;
+      } else {
+        // ── novo cadastro ──
+        await Store.add(dados);                  // idem — só diz "cadastrado" se realmente salvou
+        flash('✓ Motor cadastrado');
+      }
+      clearForm();   // re-render + contagem são feitos pelo Store (onMotorsChanged)
+    } catch (e) {
+      // NÃO engole mais o erro: mostra o motivo real do Firestore e preserva o form
+      console.error('[saveMotor] falha ao salvar no Firestore:', e);
+      const code = e && e.code ? ` [${e.code}]` : '';
+      const msg  = (e && e.message) ? e.message : String(e);
+      flash('✗ NÃO salvou' + code + ': ' + msg);
+      // dica específica pro caso mais comum (regras recusando o documento)
+      if (e && e.code === 'permission-denied') {
+        flash('⚠ Bloqueado pelas regras do Firestore — verifique tamanho/tipo dos campos.');
+      }
+    } finally {
+      if (btnSave) btnSave.disabled = false;
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     LISTA / RENDERIZAR
+  ══════════════════════════════════════════ */
+  function renderList() {
+    const q = (document.getElementById('searchInput')?.value||'').toLowerCase();
+    const filtered = q
+      ? motors.filter(m=>
+          (m.tag||'').toLowerCase().includes(q)||
+          (m.carcaca||'').toLowerCase().includes(q)||
+          (m.fabricante||'').toLowerCase().includes(q)||
+          (m.potencia||'').toLowerCase().includes(q)||
+          (m.rpm||'').toLowerCase().includes(q)||
+          (m.obs||'').toLowerCase().includes(q)||
+          ((m.flange ? ('flange ' + (m.flangeFuros!=null ? m.flangeFuros+' furos' : '')) : '') +
+           (m.baseFixacao ? ' base de fixacao base fixação' : '')).toLowerCase().includes(q))
+      : motors;
+    const lbl = document.getElementById('listLabel');
+    lbl.textContent = filtered.length
+      ? filtered.length+' motor'+(filtered.length!==1?'es':'')+(q?' encontrado'+(filtered.length!==1?'s':''):'s cadastrados')
+      : '';
+    const list = document.getElementById('motorList');
+    if (!filtered.length) {
+      list.innerHTML=`<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+        <p>${q?'Nenhum motor para "'+escapeHtml(q)+'"':'Nenhum motor cadastrado ainda.'}</p></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(m => {
+      const tagLabel = escapeHtml(m.tag || ('#'+String(motors.indexOf(m)+1).padStart(3,'0')));
+      return `
+      <div class="nameplate">
+        <div class="np-identity">
+          <div class="np-id-left">
+            <div class="np-id-top">
+              <span class="np-tag">${tagLabel}</span>
+              <span class="np-carcaca">${escapeHtml(m.carcaca)}</span>
+            </div>
+            ${m.fabricante?`<div class="np-fabricante">${escapeHtml(m.fabricante)}</div>`:''}
+          </div>
+          <div class="np-actions">
+            <button class="btn btn-ghost btn-sm" onclick="editMotor('${m.id}')" title="Editar">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="askDelete('${m.id}')" title="Remover">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="np-panels">
+          <div class="np-panel">
+            <div class="np-panel-title"><div class="dot dot-elec"></div><span class="elec">Elétrico</span></div>
+            <div class="np-fields">
+              <div class="np-row"><span class="np-lbl">Potência</span><span class="np-val hi">${escapeHtml(m.potencia)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Amperagem</span><span class="np-val elec-col">${escapeHtml(m.amp)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Fat. Serviço</span><span class="np-val">${escapeHtml(m.fs)||'—'}</span></div>
+            </div>
+          </div>
+          <div class="np-panel">
+            <div class="np-panel-title"><div class="dot dot-mec"></div><span class="mec">Mecânico</span></div>
+            <div class="np-fields">
+              <div class="np-row"><span class="np-lbl">RPM</span><span class="np-val mec-col">${escapeHtml(m.rpm)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Polos</span><span class="np-val">${(()=>{ const p=m.polos||getPolos(m.rpm); return p?`<span class="np-polo-badge">${escapeHtml(p)}</span>`:'—'; })()}</span></div>
+              <div class="np-row"><span class="np-lbl">Eixo (Ø)</span><span class="np-val">${escapeHtml(m.eixo)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Carcaça</span><span class="np-val">${escapeHtml(m.carcaca)}</span></div>
+              <div class="np-row"><span class="np-lbl">Flange</span><span class="np-val">${m.flange ? (m.flangeFuros!=null ? escapeHtml(String(m.flangeFuros))+' furos' : 'sim') : 'não'}</span></div>
+              <div class="np-row"><span class="np-lbl">Base fix.</span><span class="np-val">${m.baseFixacao ? 'sim' : 'não'}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="np-footer">
+          <span class="np-obs">${m.obs?'📝 '+escapeHtml(m.obs):''}</span>
+          <span class="np-date">${m.updatedAt?'editado '+escapeHtml(m.updatedAt):escapeHtml(m.createdAt)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ══════════════════════════════════════════
+     EDITAR / EXCLUIR / HELPERS
+  ══════════════════════════════════════════ */
+  function editMotor(id) {
+    const m = motors.find(x=>x.id===id);
+    if(!m) return;
+    ['tag','carcaca','fabricante','potencia','amp','fs','rpm','eixo','obs']
+      .forEach(k => { document.getElementById('f_'+k).value = m[k]||''; });
+    calcPolos(m.rpm||'');
+    // campos novos (flange / base de fixação)
+    document.getElementById('f_flange').checked      = !!m.flange;
+    document.getElementById('f_baseFixacao').checked = !!m.baseFixacao;
+    document.getElementById('f_flangeFuros').value   = (m.flange && m.flangeFuros!=null) ? m.flangeFuros : '';
+    toggleFlange(!!m.flange);
+    editingId = id;                          // marca edição in-place
+    setFormMode(true);
+    switchTab('cadastro');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    flash('✏ Editando — altere e salve');
+  }
+  function askDelete(id) {
+    deleteTarget = id;
+    const m = motors.find(x=>x.id===id);
+    const label = m ? (m.tag || ('carcaça '+m.carcaca)) : '';
+    document.getElementById('modalDesc').textContent = `Motor ${label} será removido.`;
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeModal() { document.getElementById('overlay').classList.remove('open'); deleteTarget=null; }
+  function confirmDelete() {
+    Store.remove(deleteTarget);
+    if (editingId===deleteTarget) { editingId=null; setFormMode(false); clearForm(); }
+    closeModal(); flash('Motor removido');
+  }
+  function clearForm() {
+    ['f_tag','f_carcaca','f_fabricante','f_potencia','f_amp','f_fs','f_rpm','f_eixo','f_obs']
+      .forEach(id => document.getElementById(id).value='');
+    document.getElementById('f_flange').checked = false;
+    document.getElementById('f_baseFixacao').checked = false;
+    document.getElementById('f_flangeFuros').value = '';
+    toggleFlange(false);
+    document.getElementById('poloHint').innerHTML='';
+    editingId = null;
+    setFormMode(false);
+    limparFoto();
+  }
+  // alterna o rótulo do formulário entre "Cadastrar" e "Salvar edição"
+  function setFormMode(editing) {
+    const btn = document.getElementById('btnSalvar');
+    const banner = document.getElementById('editBanner');
+    if (btn)    btn.querySelector('.btn-label').textContent = editing ? 'Salvar Alterações' : 'Cadastrar Motor';
+    if (banner) banner.style.display = editing ? 'flex' : 'none';
+  }
+  function updateCount() { const c=motors.length; document.getElementById('headerCount').textContent=c+' motor'+(c!==1?'es':''); }
+  let toastTimer;
+  function flash(msg) {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+  }
+
+  Store.start();   // carrega do cache local (offline-first); o módulo Firebase assume depois, se configurado
+
+  /* ══════════════════════════════════════════
+     LOGIN — tela de bloqueio (senha de equipe, Passo 4)
+  ══════════════════════════════════════════ */
+  async function tentarLogin() {
+    const pass = document.getElementById('lockPass').value;
+    const msg  = document.getElementById('lockMsg');
+    const btn  = document.getElementById('lockBtn');
+    if (!pass) { msg.textContent = 'Digite a senha.'; return; }
+    btn.disabled = true; msg.textContent = 'Verificando...';
+    try {
+      const r = await fetch('/.netlify/functions/verifica-senha', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha: pass })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.ok) {
+        sessionStorage.setItem('ms_auth', '1');
+        await window.FB.signIn();            // login anônimo no Firebase (libera as Security Rules)
+        liberarApp();
+      } else if (r.status === 429 || data.bloqueado) {
+        const min = Math.max(1, Math.ceil((data.retryEm || 600) / 60));
+        msg.textContent = `Muitas tentativas. Tente de novo em ~${min} min.`;
+        btn.disabled = false;
+      } else {
+        const rest = (typeof data.restantes === 'number') ? ` (${data.restantes} restantes)` : '';
+        msg.textContent = 'Senha incorreta.' + rest; btn.disabled = false;
+      }
+    } catch (e) {
+      msg.textContent = 'Erro de conexão. Publique no Netlify (com a Function) e tente de novo.';
+      btn.disabled = false;
+    }
+  }
+  function liberarApp() {
+    const o = document.getElementById('lockOverlay');
+    if (o) o.style.display = 'none';
+  }
+
+  /* ══════════════════════════════════════════
+     PWA — registra o service worker
+  ══════════════════════════════════════════ */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () =>
+      navigator.serviceWorker.register('/sw.js').catch(console.error)
+    );
+  }
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FIREBASE (Passo 3) — módulo. Troca o Store local pela NUVEM
+     (Firestore em tempo real + offline) quando configurado + autenticado.
+══════════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import {
+    initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField
+  } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  import { getAuth, signInAnonymously, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+  /* ⚠️⚠️⚠️  VOCÊ FAZ (Passo 3.1):  cole aqui o firebaseConfig do SEU projeto.
+     Firebase → Configurações do projeto → Seus apps → App Web → "SDK setup and configuration".
+     Estes valores são PÚBLICOS por design — a proteção real vem das Security Rules (Passo 3.3).
+     Enquanto estiver "COLE_AQUI", o app roda em MODO LOCAL (localStorage, sem senha).        */
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAoIiZQtrR22UwbhK7fttnk5saC2jxzcNA",
+    authDomain:        "motor-stock-4c131.firebaseapp.com",
+    projectId:         "motor-stock-4c131",
+    storageBucket:     "motor-stock-4c131.firebasestorage.app",
+    messagingSenderId: "132287078444",
+    appId:             "1:132287078444:web:d9083baf916ebc6264f189"
+  };
+
+  const configurado = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'COLE_AQUI';
+
+  if (!configurado) {
+    console.warn('[Motor Stock] Firebase não configurado — MODO LOCAL (localStorage, sem senha). ' +
+                 'Cole o firebaseConfig no index.html para ativar a nuvem (multiusuário + senha de equipe).');
+    window.FB = { configured: false, signIn: async () => {} };
+    // modo local: não mostra a tela de senha (facilita testar os Passos 1–3 offline)
+  } else {
+    const app  = initializeApp(firebaseConfig);
+    const db   = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })  // offline + multi-aba
+    });
+    const auth = getAuth(app);
+    const col  = collection(db, 'motores');
+
+    // ── Store NUVEM (Firestore) ──
+    const FirebaseStore = {
+      mode: 'cloud',
+      _unsub: null,
+      start() {
+        if (this._unsub) return;                         // onSnapshot só uma vez
+        const q = query(col, orderBy('createdTS', 'desc'));
+        this._unsub = onSnapshot(q, snap => {
+          window.motors = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          try { localStorage.setItem('motors_stock', JSON.stringify(window.motors)); } catch {}
+          onMotorsChanged();                             // re-render em tempo real
+        }, err => console.error('[Firestore] onSnapshot:', err));
+      },
+      async add(data)        { await addDoc(col, { ...data, createdAt: new Date().toLocaleDateString('pt-BR'), createdTS: Date.now() }); },
+      async update(id, data) {
+        const payload = { ...data, updatedAt: new Date().toLocaleDateString('pt-BR') };
+        // ao desmarcar flange, remove flangeFuros do documento pra não deixar dado órfão
+        if (data.flange === false) payload.flangeFuros = deleteField();
+        await updateDoc(doc(db, 'motores', id), payload);
+      },
+      async remove(id)       { await deleteDoc(doc(db, 'motores', id)); }
+    };
+
+    window.FB = { configured: true, signIn: () => signInAnonymously(auth) };
+
+    // ao autenticar (anônimo), assume o Store da nuvem e liga o tempo real
+    onAuthStateChanged(auth, user => {
+      if (user) { window.Store = FirebaseStore; FirebaseStore.start(); }
+    });
+
+    // tela de senha (gate). Se já logou nesta sessão, reautentica e libera direto.
+    const overlay = document.getElementById('lockOverlay');
+    if (sessionStorage.getItem('ms_auth') === '1') {
+      signInAnonymously(auth).catch(e => console.error('[Auth]', e));
+      if (overlay) overlay.style.display = 'none';
+    } else if (overlay) {
+      overlay.style.display = 'flex';
+      setTimeout(() => document.getElementById('lockPass')?.focus(), 100);
+    }
+  }
+</script>
+</body>
+</html>

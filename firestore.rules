@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────
+// Motor Stock — Security Rules (Passo 3.3, versão com validação)
+// Cole TUDO isto em: Firebase → Firestore Database → aba "Regras".
+// Além de exigir login (anônimo, liberado pela Function de senha),
+// trava os campos permitidos e valida tipo/tamanho — assim nem um
+// cliente autenticado consegue gravar campos arbitrários ou lixo.
+// ─────────────────────────────────────────────────────────────
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // valida a forma de um documento de motor
+    // Limites alinhados aos valores REAIS que o app grava, incluindo os que a
+    // leitura por foto (IA) pode produzir — mais folgados que a 1ª versão, que
+    // barrava dado válido (obs/rpm/fs/polos eram curtos demais). Ainda trava
+    // campos arbitrários (hasOnly) e valida tipo, mantendo a proteção.
+    function motorValido(d) {
+      return d.keys().hasOnly(['tag','carcaca','fabricante','potencia','amp','fs',
+                               'rpm','polos','eixo','obs',
+                               'flange','flangeFuros','baseFixacao',
+                               'createdAt','updatedAt','createdTS'])
+        // obrigatórios
+        && 'carcaca'  in d && d.carcaca  is string && d.carcaca.size()  >= 1 && d.carcaca.size()  <= 60
+        && 'potencia' in d && d.potencia is string && d.potencia.size() >= 1 && d.potencia.size() <= 80
+        // opcionais (quando presentes, precisam ser string dentro do limite)
+        && (!('tag'        in d) || (d.tag        is string && d.tag.size()        <= 60))
+        && (!('fabricante' in d) || (d.fabricante is string && d.fabricante.size() <= 80))
+        && (!('amp'        in d) || (d.amp        is string && d.amp.size()        <= 60))
+        && (!('fs'         in d) || (d.fs         is string && d.fs.size()         <= 40))
+        && (!('rpm'        in d) || (d.rpm        is string && d.rpm.size()        <= 40))
+        && (!('polos'      in d) || (d.polos      is string && d.polos.size()      <= 15))
+        && (!('eixo'       in d) || (d.eixo       is string && d.eixo.size()       <= 40))
+        && (!('obs'        in d) || (d.obs        is string && d.obs.size()        <= 600))
+        // campos mecânicos novos: flange/base (boolean) e nº de furos (number 0..100)
+        && (!('flange'      in d) || d.flange      is bool)
+        && (!('baseFixacao' in d) || d.baseFixacao is bool)
+        && (!('flangeFuros' in d) || (d.flangeFuros is number && d.flangeFuros >= 0 && d.flangeFuros <= 100))
+        && (!('createdAt'  in d) || (d.createdAt  is string && d.createdAt.size()  <= 20))
+        && (!('updatedAt'  in d) || (d.updatedAt  is string && d.updatedAt.size()  <= 20))
+        && (!('createdTS'  in d) || d.createdTS is number);
+    }
+
+    match /motores/{doc} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null && motorValido(request.resource.data);
+      allow update: if request.auth != null && motorValido(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    // nega tudo que não casar acima
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,20 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # CSP: libera só o necessário. Firebase (Firestore + Auth anônimo) + Google Fonts + self.
+    # A IA roda na Function (servidor) — api.cloudflare.com NÃO precisa entrar aqui.
+    # Se algo quebrar no console com erro de CSP, adicione o domínio exato (nunca use *).
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src 'self' blob:;"
+
+# o service worker precisa ser servido sem cache agressivo pra o browser detectar updates
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
