@@ -113,6 +113,38 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
   // IA fazer conta). Conversão padrão BR: 1 cv = 0,7355 kW.
   const CV_PARA_KW = 0.7355;
 
+  // Potências comerciais padrão de motores (linha WEG / IEC 60034), pares
+  // cv ↔ kW EXATAMENTE como os fabricantes imprimem na placa. Usada para
+  // "encaixar" o valor calculado no valor comercial real (ex.: 5 cv → 3,7 kW,
+  // e não 3,68 kW). Se a leitura não casar com nenhum padrão (motor fora de
+  // catálogo), cai no cálculo puro — para não forçar um valor errado.
+  const PADROES_IEC = [
+    { cv: 0.16, kw: 0.12 }, { cv: 0.25, kw: 0.18 }, { cv: 0.33, kw: 0.25 },
+    { cv: 0.5,  kw: 0.37 }, { cv: 0.75, kw: 0.55 }, { cv: 1,    kw: 0.75 },
+    { cv: 1.5,  kw: 1.1  }, { cv: 2,    kw: 1.5  }, { cv: 3,    kw: 2.2  },
+    { cv: 4,    kw: 3    }, { cv: 5,    kw: 3.7  }, { cv: 6,    kw: 4.5  },
+    { cv: 7.5,  kw: 5.5  }, { cv: 10,   kw: 7.5  }, { cv: 12.5, kw: 9.2  },
+    { cv: 15,   kw: 11   }, { cv: 20,   kw: 15   }, { cv: 25,   kw: 18.5 },
+    { cv: 30,   kw: 22   }, { cv: 40,   kw: 30   }, { cv: 50,   kw: 37   },
+    { cv: 60,   kw: 45   }, { cv: 75,   kw: 55   }, { cv: 100,  kw: 75   },
+    { cv: 125,  kw: 90   }, { cv: 150,  kw: 110  }, { cv: 175,  kw: 132  },
+    { cv: 200,  kw: 150  }, { cv: 250,  kw: 185  }, { cv: 300,  kw: 220  },
+    { cv: 350,  kw: 260  }, { cv: 400,  kw: 300  }, { cv: 500,  kw: 370  },
+    { cv: 600,  kw: 450  }
+  ];
+
+  // Acha o padrão comercial cujo valor (na unidade dada: 'cv' ou 'kw') está
+  // mais próximo de `valor`, dentro de uma tolerância relativa (6%). Retorna
+  // o par {cv, kw} ou null se nada estiver perto o suficiente.
+  function acharPadrao(valor, unidade, tol = 0.06) {
+    let melhor = null, melhorDiff = Infinity;
+    for (const p of PADROES_IEC) {
+      const diff = Math.abs(p[unidade] - valor) / p[unidade];
+      if (diff < melhorDiff) { melhorDiff = diff; melhor = p; }
+    }
+    return (melhor && melhorDiff <= tol) ? melhor : null;
+  }
+
   // número puro a partir de number OU string ("3,7" / "3.7" / "5 cv")
   function paraNumero(v) {
     if (v == null) return null;
@@ -153,9 +185,17 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
 
     if (cv == null && kw == null) return;   // nada reconhecido: mantém como veio
 
-    // completa a unidade que faltar
-    if (cv == null && kw != null) cv = kw / CV_PARA_KW;
-    if (kw == null && cv != null) kw = cv * CV_PARA_KW;
+    // Completa a unidade que faltar. Preferência: encaixar no padrão comercial
+    // (ex.: 5 cv → 3,7 kW). Só se não houver padrão próximo é que converte
+    // pela fórmula (1 cv = 0,7355 kW).
+    if (cv != null && kw == null) {
+      const p = acharPadrao(cv, 'cv');
+      kw = p ? p.kw : cv * CV_PARA_KW;
+    } else if (kw != null && cv == null) {
+      const p = acharPadrao(kw, 'kw');
+      cv = p ? p.cv : kw / CV_PARA_KW;
+    }
+    // se ambos vieram da placa, mantém os dois valores exatamente como lidos.
 
     const cvStr = fmtBR(cv), kwStr = fmtBR(kw);
     if (cvStr != null && kwStr != null) {
