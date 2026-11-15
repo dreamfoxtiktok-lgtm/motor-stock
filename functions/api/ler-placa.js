@@ -1,19 +1,23 @@
-export async function handler(event) {
-  if (event.httpMethod !== 'POST')
-    return { statusCode: 405, body: 'Method Not Allowed' };
+// Cloudflare Pages Function — responde em POST /api/ler-placa
+//
+// Mesma lógica da versão Netlify: chama o Cloudflare Workers AI (mesmo token/
+// modelo). Só muda o wrapper (onRequestPost) e a leitura de env via context.env.
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
 
   let imagemBase64, mime;
   try {
-    const body = JSON.parse(event.body);
+    const body = await request.json();
     imagemBase64 = body.imagem;           // base64 PURO (sem o prefixo data:)
     mime = body.mime || 'image/jpeg';
-  } catch { return { statusCode: 400, body: 'Bad Request' }; }
+  } catch { return new Response('Bad Request', { status: 400 }); }
 
-  if (!imagemBase64) return { statusCode: 400, body: 'Sem imagem' };
+  if (!imagemBase64) return new Response('Sem imagem', { status: 400 });
 
   // teto de tamanho (o app já comprime; isto é a defesa do servidor)
   if (imagemBase64.length > 4_500_000)
-    return { statusCode: 413, body: JSON.stringify({ erro: 'Imagem muito grande' }) };
+    return new Response(JSON.stringify({ erro: 'Imagem muito grande' }), { status: 413 });
 
   const prompt = `Você é um especialista em motores elétricos industriais.
 Analise a imagem (placa de motor ou etiqueta de tag). Extraia só o que estiver
@@ -27,8 +31,8 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
 - Use EXATAMENTE estas chaves, com null quando o dado não existir:
 {"tag":null,"carcaca":null,"fabricante":null,"potencia":null,"amp":null,"fs":null,"rpm":null,"eixo":null,"obs":null}`;
 
-  const accountId = process.env.CF_ACCOUNT_ID;
-  const model = process.env.CF_VISION_MODEL || '@cf/meta/llama-3.2-11b-vision-instruct';
+  const accountId = env.CF_ACCOUNT_ID;
+  const model = env.CF_VISION_MODEL || '@cf/meta/llama-3.2-11b-vision-instruct';
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
 
   // Extrator robusto: isola um objeto JSON mesmo com texto/markdown em volta.
@@ -71,7 +75,7 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.CF_API_TOKEN}`
+        'Authorization': `Bearer ${env.CF_API_TOKEN}`
       },
       body: JSON.stringify({
         messages: [{
@@ -97,7 +101,7 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
       // erro de infra/credencial do Cloudflare: retry não ajuda → devolve na hora
       if (!resp.ok) {
         const err = await resp.text();
-        return { statusCode: resp.status, body: JSON.stringify({ erro: err }) };
+        return new Response(JSON.stringify({ erro: err }), { status: resp.status });
       }
 
       const data = await resp.json();
@@ -117,15 +121,14 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
 
     if (!campos) {
       console.error('[ler-placa] Falha no parse após retry. Bruto:', ultimoBruto);
-      return { statusCode: 502, body: JSON.stringify({ erro: 'IA não devolveu JSON', bruto: ultimoBruto }) };
+      return new Response(JSON.stringify({ erro: 'IA não devolveu JSON', bruto: ultimoBruto }), { status: 502 });
     }
 
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(campos)
-    };
+    return new Response(
+      JSON.stringify(campos),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ erro: String(e) }) };
+    return new Response(JSON.stringify({ erro: String(e) }), { status: 500 });
   }
 }

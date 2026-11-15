@@ -555,18 +555,6 @@
 
   /* inputs ocultos de arquivo */
   #inputFile, #inputCapture { display: none; }
-
-  /* ══ SELO MOTOR STOCK — cobre o badge "Powered by Netlify" injetado no canto ══ */
-  #msStamp {
-    position: fixed; right: 0; bottom: 0;
-    z-index: 2147483000;                 /* acima de qualquer badge injetado */
-    background: var(--bg);               /* fundo sólido cobre o badge mesmo nos cantos transparentes do selo */
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-    border-top-left-radius: 10px;
-    line-height: 0;
-  }
-  #msStamp img { display: block; width: 132px; height: auto; }
-  @media (max-width: 420px) { #msStamp img { width: 112px; } }
 </style>
 </head>
 <body>
@@ -901,9 +889,6 @@
     <div class="lock-msg" id="lockMsg"></div>
   </div>
 </div>
-
-<!-- Selo Motor Stock — cobre o badge "Powered by Netlify" injetado pelo Netlify no canto inferior direito -->
-<div id="msStamp" aria-hidden="true"><img src="/icons/selo-motorstock.png" alt="Motor Stock"></div>
 
 <div class="toast" id="toast"></div>
 <div class="overlay" id="overlay">
@@ -1508,7 +1493,7 @@
   ══════════════════════════════════════════ */
   const IMG_MAX_DIM   = 1600;                 // maior lado, em px
   const IMG_JPEG_Q    = 0.82;                 // qualidade inicial
-  const IMG_MAX_BYTES = 3.5 * 1024 * 1024;    // teto do base64 enviado (~folga sob o limite ~6 MB do Netlify)
+  const IMG_MAX_BYTES = 3.5 * 1024 * 1024;    // teto do base64 enviado (folga confortável sob o limite de corpo do Cloudflare)
 
   function comprimirImagem(srcDataUrl) {
     return new Promise((resolve, reject) => {
@@ -1562,9 +1547,9 @@
 
     try {
       statusTxt.textContent = 'Enviando para análise...';
-      // A IA roda na Netlify Function (Cloudflare Workers AI). A chave fica no servidor,
-      // nunca no navegador. A Function devolve o objeto de campos já validado.
-      const resp = await fetch('/.netlify/functions/ler-placa', {
+      // A IA roda na Cloudflare Pages Function (Cloudflare Workers AI). A chave fica no
+      // servidor, nunca no navegador. A Function devolve o objeto de campos já validado.
+      const resp = await fetch('/api/ler-placa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imagem: fotoBase64, mime: fotoMime })
@@ -2042,7 +2027,7 @@
     if (!pass) { msg.textContent = 'Digite a senha.'; return; }
     btn.disabled = true; msg.textContent = 'Verificando...';
     try {
-      const r = await fetch('/.netlify/functions/verifica-senha', {
+      const r = await fetch('/api/verifica-senha', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senha: pass })
       });
@@ -2060,7 +2045,7 @@
         msg.textContent = 'Senha incorreta.' + rest; btn.disabled = false;
       }
     } catch (e) {
-      msg.textContent = 'Erro de conexão. Publique no Netlify (com a Function) e tente de novo.';
+      msg.textContent = 'Erro de conexão. Publique no Cloudflare Pages (com a Function) e tente de novo.';
       btn.disabled = false;
     }
   }
