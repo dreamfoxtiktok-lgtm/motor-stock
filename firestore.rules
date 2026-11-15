@@ -17,7 +17,7 @@ service cloud.firestore {
     // campos arbitrários (hasOnly) e valida tipo, mantendo a proteção.
     function motorValido(d) {
       return d.keys().hasOnly(['tag','carcaca','fabricante','potencia','amp','fs',
-                               'rpm','polos','eixo','obs',
+                               'rpm','polos','eixo','obs','endereco',
                                'flange','flangeFuros','baseFixacao',
                                'status','localAtual','historico',
                                'testado','dataTeste','turnoTeste',
@@ -34,6 +34,7 @@ service cloud.firestore {
         && (!('polos'      in d) || (d.polos      is string && d.polos.size()      <= 15))
         && (!('eixo'       in d) || (d.eixo       is string && d.eixo.size()       <= 40))
         && (!('obs'        in d) || (d.obs        is string && d.obs.size()        <= 600))
+        && (!('endereco'   in d) || (d.endereco   is string && d.endereco.size()   <= 120))
         // campos mecânicos novos: flange/base (boolean) e nº de furos (number 0..100)
         && (!('flange'      in d) || d.flange      is bool)
         && (!('baseFixacao' in d) || d.baseFixacao is bool)

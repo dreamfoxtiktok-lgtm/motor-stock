@@ -523,10 +523,10 @@
     text-align: center;
   }
   .lock-box .lock-logo {
-    width: 54px; height: 54px; border-radius: 50%; background: var(--yellow);
+    width: 54px; height: 54px; border-radius: 50%; overflow: hidden;
     display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
   }
-  .lock-box .lock-logo svg { width: 28px; height: 28px; color: var(--navy); }
+  .lock-box .lock-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .lock-box h2 { font-size: 17px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
   .lock-box p  { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
   .lock-box input {
@@ -707,6 +707,9 @@
             </datalist>
           </div>
         </div>
+        <div class="form-row single">
+          <div class="fg"><label>Endereço</label><input type="text" id="f_endereco" autocomplete="off"></div>
+        </div>
       </div>
     </div>
 
@@ -866,6 +869,10 @@
         <div class="dash-card-title">Movimentações por Mês (saídas × retornos)</div>
         <canvas id="chartMov"></canvas>
       </div>
+      <div class="dash-card dash-card-wide">
+        <div class="dash-card-title">Motores mais movimentados</div>
+        <canvas id="chartMaisMov"></canvas>
+      </div>
     </div>
 
   </div>
@@ -876,10 +883,7 @@
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-box">
     <div class="lock-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
-      </svg>
+      <img src="/icons/icon-192.png" alt="Motor Stock" width="54" height="54">
     </div>
     <h2>MOTOR STOCK</h2>
     <p>Acesso restrito à equipe</p>
@@ -1129,12 +1133,15 @@
         datasets:[{ data: potValSorted.map(([,v]) => v), backgroundColor:'#f5c518', borderRadius:4, borderSkipped:false }]
       },
       options: {
-        plugins:{ legend:{display:false} },
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}, beginAtZero:true} },
+        indexAxis:'y',                       // barras horizontais → rótulos legíveis
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.parsed.x} motor${c.parsed.x!==1?'es':''}` } } },
+        scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1, precision:0}, beginAtZero:true}, y:{grid:{display:false}} },
         responsive:true, maintainAspectRatio:false
       }
     });
-    const pvCanvas = document.getElementById('chartPotVal'); if (pvCanvas) pvCanvas.style.height = '200px';
+    // altura proporcional à quantidade de faixas (evita barras esmagadas/desproporcionais)
+    const pvCanvas = document.getElementById('chartPotVal');
+    if (pvCanvas) pvCanvas.style.height = Math.max(140, potValSorted.length * 34 + 20) + 'px';
 
     // ── GRÁFICO 3: por Carcaça ──
     destroyChart('car');
@@ -1184,6 +1191,33 @@
       }
     });
     const movCanvas = document.getElementById('chartMov'); if (movCanvas) movCanvas.style.height = '200px';
+
+    // ── GRÁFICO 5: Motores mais movimentados (ranking por nº de movimentações) ──
+    // Conta as entradas do histórico que representam movimentação de verdade
+    // (exclui o "Cadastrado"). Mostra o top 8, barras horizontais.
+    destroyChart('maismov');
+    const maisMov = motors.map(m => {
+      const h = Array.isArray(m.historico) ? m.historico : [];
+      const n = h.filter(x => x && x.acao && x.acao !== 'Cadastrado').length;
+      const rotulo = (m.tag && m.tag.trim()) ? m.tag : ('Carc. ' + (m.carcaca || '?'));
+      return { rotulo, n };
+    }).filter(x => x.n > 0).sort((a,b) => b.n - a.n).slice(0, 8);
+
+    _charts['maismov'] = new Chart(document.getElementById('chartMaisMov'), {
+      type: 'bar',
+      data: {
+        labels: maisMov.map(x => x.rotulo),
+        datasets:[{ data: maisMov.map(x => x.n), backgroundColor:'#b57bee', borderRadius:4, borderSkipped:false }]
+      },
+      options: {
+        indexAxis:'y',
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.parsed.x} movimentaç${c.parsed.x!==1?'ões':'ão'}` } } },
+        scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1, precision:0}, beginAtZero:true}, y:{grid:{display:false}} },
+        responsive:true, maintainAspectRatio:false
+      }
+    });
+    const mmCanvas = document.getElementById('chartMaisMov');
+    if (mmCanvas) mmCanvas.style.height = Math.max(140, maisMov.length * 34 + 20) + 'px';
   }
 
   // extrai valor numérico de potência em cv
@@ -1689,6 +1723,7 @@
       rpm, polos: getPolos(rpm),
       eixo:      document.getElementById('f_eixo').value.trim(),
       obs:       document.getElementById('f_obs').value.trim(),
+      endereco:  document.getElementById('f_endereco').value.trim(),
       flange, baseFixacao,
     };
     // flangeFuros: number, só quando "tem flange" está marcado e um valor válido foi informado
@@ -1872,6 +1907,7 @@
           (m.potencia||'').toLowerCase().includes(q)||
           (m.rpm||'').toLowerCase().includes(q)||
           (m.obs||'').toLowerCase().includes(q)||
+          (m.endereco||'').toLowerCase().includes(q)||
           (m.localAtual||'').toLowerCase().includes(q)||
           (m.testado ? ('testado ' + (m.dataTeste||'') + ' ' + (m.turnoTeste||'')) : '').toLowerCase().includes(q)||
           ((m.flange ? ('flange ' + (m.flangeFuros!=null ? m.flangeFuros+' furos' : '')) : '') +
@@ -1901,6 +1937,7 @@
               <span class="np-status" style="color:${si.color};border-color:${si.border};background:${si.bg}"><span class="sdot"></span>${si.label}</span>
             </div>
             ${m.fabricante?`<div class="np-fabricante">${escapeHtml(m.fabricante)}</div>`:''}
+            ${m.endereco?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>${escapeHtml(m.endereco)}</div>`:''}
             ${si.key==='uso' && m.localAtual?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHtml(m.localAtual)}</div>`:''}
           </div>
           <div class="np-actions">
@@ -1949,7 +1986,7 @@
   function editMotor(id) {
     const m = motors.find(x=>x.id===id);
     if(!m) return;
-    ['tag','carcaca','fabricante','potencia','amp','fs','rpm','eixo','obs']
+    ['tag','carcaca','fabricante','potencia','amp','fs','rpm','eixo','obs','endereco']
       .forEach(k => { document.getElementById('f_'+k).value = m[k]||''; });
     calcPolos(m.rpm||'');
     // campos novos (flange / base de fixação)
@@ -1984,7 +2021,7 @@
     closeModal(); flash('Motor removido');
   }
   function clearForm() {
-    ['f_tag','f_carcaca','f_fabricante','f_potencia','f_amp','f_fs','f_rpm','f_eixo','f_obs']
+    ['f_tag','f_carcaca','f_fabricante','f_potencia','f_amp','f_fs','f_rpm','f_eixo','f_obs','f_endereco']
       .forEach(id => document.getElementById(id).value='');
     document.getElementById('f_flange').checked = false;
     document.getElementById('f_baseFixacao').checked = false;
