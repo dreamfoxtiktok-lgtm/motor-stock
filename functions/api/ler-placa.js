@@ -1,7 +1,12 @@
 // Cloudflare Pages Function — responde em POST /api/ler-placa
 //
-// Mesma lógica da versão Netlify: chama o Cloudflare Workers AI (mesmo token/
-// modelo). Só muda o wrapper (onRequestPost) e a leitura de env via context.env.
+// Usa o BINDING NATIVO de Workers AI do Cloudflare Pages (context.env.AI),
+// em vez da API REST com token. Isso elimina CF_API_TOKEN e CF_ACCOUNT_ID:
+// a autenticação passa a ser feita pela própria plataforma, acabando com o
+// "Authentication error" (code 10000).
+//
+// IMPORTANTE (configuração no painel): é preciso adicionar o binding de
+// Workers AI com o nome "AI" em Settings → Functions → Bindings → Workers AI.
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -31,30 +36,13 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
 - Use EXATAMENTE estas chaves, com null quando o dado não existir:
 {"tag":null,"carcaca":null,"fabricante":null,"potencia":null,"amp":null,"fs":null,"rpm":null,"eixo":null,"obs":null}`;
 
-  // IMPORTANTE: .trim() defende contra espaço/quebra de linha colados junto do
-  // valor no painel do Cloudflare Pages — causa clássica de "Authentication
-  // error" (code 10000) mesmo com token válido, pois o header vira
-  // "Bearer <token>\n" e a API rejeita.
-  const accountId = (env.CF_ACCOUNT_ID || '').trim();
-  const apiToken  = (env.CF_API_TOKEN  || '').trim();
   const model = env.CF_VISION_MODEL || '@cf/meta/llama-3.2-11b-vision-instruct';
-  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
 
-  // LOG TEMPORÁRIO DE DIAGNÓSTICO (não expõe o valor, só presença/tamanho).
-  // Remover depois de confirmar que as credenciais chegam à Function.
-  console.log('[ler-placa] diag credenciais —',
-              'CF_API_TOKEN presente:', !!apiToken, '| tamanho:', apiToken.length,
-              '| CF_ACCOUNT_ID presente:', !!accountId, '| tamanho:', accountId.length);
-
-  // Guard: se faltar credencial, devolve erro claro em vez de bater na API e
-  // receber o 10000 genérico (que confunde "token errado" com "token ausente").
-  if (!apiToken || !accountId) {
+  // Guard: o binding precisa existir. Se faltar, erro claro em vez de crash.
+  if (!env.AI || typeof env.AI.run !== 'function') {
     return new Response(JSON.stringify({
-      erro: 'Credenciais do Cloudflare ausentes no ambiente da Function. ' +
-            'Verifique CF_API_TOKEN e CF_ACCOUNT_ID em Settings → Variables and Secrets ' +
-            '(e confirme que estão no ambiente Production do deploy).',
-      tokenPresente: !!apiToken,
-      accountIdPresente: !!accountId
+      erro: 'Binding de Workers AI ausente. Adicione o binding com o nome "AI" ' +
+            'em Settings → Functions → Bindings → Workers AI no Cloudflare Pages.'
     }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 
@@ -93,24 +81,20 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
     return null;
   }
 
+  // Chama o Workers AI pelo binding nativo (sem token, sem account_id na URL).
+  // O binding devolve direto o objeto de resultado (equivalente ao data.result
+  // da API REST), normalmente com o texto em .response.
   async function chamarIA() {
-    return fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiToken}`
-      },
-      body: JSON.stringify({
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: `data:${mime};base64,${imagemBase64}` } }
-          ]
-        }],
-        max_tokens: 500,
-        temperature: 0.1          // mais determinístico = menos "enrolação" fora do JSON
-      })
+    return env.AI.run(model, {
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: `data:${mime};base64,${imagemBase64}` } }
+        ]
+      }],
+      max_tokens: 500,
+      temperature: 0.1          // mais determinístico = menos "enrolação" fora do JSON
     });
   }
 
@@ -119,21 +103,14 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
     const MAX_TENTATIVAS = 2;     // 1 chamada + 1 retry automático
 
     for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
-      const resp = await chamarIA();
+      const resultado = await chamarIA();
 
-      // erro de infra/credencial do Cloudflare: retry não ajuda → devolve na hora
-      if (!resp.ok) {
-        const err = await resp.text();
-        return new Response(JSON.stringify({ erro: err }), { status: resp.status });
-      }
-
-      const data = await resp.json();
-      // Workers AI normalmente devolve o texto em data.result.response,
+      // Workers AI normalmente devolve o texto em resultado.response,
       // mas dependendo do modelo pode vir objeto já estruturado (ou ausente).
-      const resposta = data?.result?.response;
-      ultimoBruto = typeof resposta === 'string' ? resposta : JSON.stringify(resposta ?? data?.result ?? '');
+      const resposta = resultado?.response;
+      ultimoBruto = typeof resposta === 'string' ? resposta : JSON.stringify(resposta ?? resultado ?? '');
       console.log(`[ler-placa] tentativa ${tentativa}/${MAX_TENTATIVAS} — tipo resposta:`,
-                  typeof resposta, '| raw:', JSON.stringify(data?.result));
+                  typeof resposta, '| raw:', JSON.stringify(resultado));
 
       campos = extrairJSON(resposta);
       if (campos) break;
