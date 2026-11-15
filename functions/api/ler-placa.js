@@ -31,9 +31,32 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
 - Use EXATAMENTE estas chaves, com null quando o dado não existir:
 {"tag":null,"carcaca":null,"fabricante":null,"potencia":null,"amp":null,"fs":null,"rpm":null,"eixo":null,"obs":null}`;
 
-  const accountId = env.CF_ACCOUNT_ID;
+  // IMPORTANTE: .trim() defende contra espaço/quebra de linha colados junto do
+  // valor no painel do Cloudflare Pages — causa clássica de "Authentication
+  // error" (code 10000) mesmo com token válido, pois o header vira
+  // "Bearer <token>\n" e a API rejeita.
+  const accountId = (env.CF_ACCOUNT_ID || '').trim();
+  const apiToken  = (env.CF_API_TOKEN  || '').trim();
   const model = env.CF_VISION_MODEL || '@cf/meta/llama-3.2-11b-vision-instruct';
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+
+  // LOG TEMPORÁRIO DE DIAGNÓSTICO (não expõe o valor, só presença/tamanho).
+  // Remover depois de confirmar que as credenciais chegam à Function.
+  console.log('[ler-placa] diag credenciais —',
+              'CF_API_TOKEN presente:', !!apiToken, '| tamanho:', apiToken.length,
+              '| CF_ACCOUNT_ID presente:', !!accountId, '| tamanho:', accountId.length);
+
+  // Guard: se faltar credencial, devolve erro claro em vez de bater na API e
+  // receber o 10000 genérico (que confunde "token errado" com "token ausente").
+  if (!apiToken || !accountId) {
+    return new Response(JSON.stringify({
+      erro: 'Credenciais do Cloudflare ausentes no ambiente da Function. ' +
+            'Verifique CF_API_TOKEN e CF_ACCOUNT_ID em Settings → Variables and Secrets ' +
+            '(e confirme que estão no ambiente Production do deploy).',
+      tokenPresente: !!apiToken,
+      accountIdPresente: !!accountId
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
 
   // Extrator robusto: isola um objeto JSON mesmo com texto/markdown em volta.
   // Aceita string OU objeto (alguns modelos já devolvem JSON estruturado).
@@ -75,7 +98,7 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.CF_API_TOKEN}`
+        'Authorization': `Bearer ${apiToken}`
       },
       body: JSON.stringify({
         messages: [{
