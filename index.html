@@ -89,8 +89,8 @@
     position: sticky; top: env(safe-area-inset-top, 0); z-index: 100;
   }
   .logo { display: flex; align-items: center; gap: 10px; }
-  .logo-icon { width: 34px; height: 34px; background: var(--yellow); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-  .logo-icon svg { width: 18px; height: 18px; color: var(--navy); }
+  .logo-icon { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .logo-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .logo-text h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.05em; }
   .logo-text span { font-size: 10px; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
   .header-count { background: var(--navy-mid); border: 1px solid var(--navy-light); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--yellow); font-family: 'Share Tech Mono', monospace; }
@@ -562,10 +562,7 @@
 <header>
   <div class="logo">
     <div class="logo-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
-      </svg>
+      <img src="/icons/icon-192.png" alt="Motor Stock" width="34" height="34">
     </div>
     <div class="logo-text">
       <h1>MOTOR STOCK</h1>
@@ -862,8 +859,8 @@
         <canvas id="chartCarcaca"></canvas>
       </div>
       <div class="dash-card dash-card-wide">
-        <div class="dash-card-title">Cobertura por Faixa de Potência (cv)</div>
-        <canvas id="chartPotencia"></canvas>
+        <div class="dash-card-title">Motores por Potência</div>
+        <canvas id="chartPotVal"></canvas>
       </div>
       <div class="dash-card dash-card-wide">
         <div class="dash-card-title">Movimentações por Mês (saídas × retornos)</div>
@@ -1042,7 +1039,7 @@
     if (!motors.length) {
       document.getElementById('kpiRow').innerHTML =
         '<div class="dash-empty" style="grid-column:1/-1">Nenhum motor cadastrado ainda.</div>';
-      ['chartStatus','chartCarcaca','chartPotencia','chartMov']
+      ['chartStatus','chartCarcaca','chartPotVal','chartMov']
         .forEach(id => { const c=document.getElementById(id); if(c) c.parentElement.innerHTML=`<div class="dash-card-title">${c.parentElement.querySelector('.dash-card-title').textContent}</div><div class="dash-empty">Sem dados</div>`; });
       return;
     }
@@ -1112,33 +1109,32 @@
       }
     });
 
-    // ── GRÁFICO 2: por Potência (histograma de faixas) ──
-    destroyChart('pot');
-    const faixas = {'< 1 cv':0,'1–5 cv':0,'5–10 cv':0,'10–25 cv':0,'25–50 cv':0,'50–100 cv':0,'> 100 cv':0,'N/D':0};
+    // ── GRÁFICO 2: Motores por Potência (contagem por valor em cv) ──
+    destroyChart('potval');
+    const potValCount = {};
     motors.forEach(m => {
       const v = parsePot(m.potencia);
-      if (!v)           faixas['N/D']++;
-      else if (v<1)     faixas['< 1 cv']++;
-      else if (v<5)     faixas['1–5 cv']++;
-      else if (v<10)    faixas['5–10 cv']++;
-      else if (v<25)    faixas['10–25 cv']++;
-      else if (v<50)    faixas['25–50 cv']++;
-      else if (v<100)   faixas['50–100 cv']++;
-      else              faixas['> 100 cv']++;
+      const key = v > 0 ? ((Number.isInteger(v) ? String(v) : String(v).replace('.', ',')) + ' cv') : 'N/D';
+      potValCount[key] = (potValCount[key] || 0) + 1;
     });
-    _charts['pot'] = new Chart(document.getElementById('chartPotencia'), {
+    // ordena por valor numérico crescente (N/D por último)
+    const potValSorted = Object.entries(potValCount).sort((a,b) => {
+      const na = parseFloat(a[0].replace(',', '.')), nb = parseFloat(b[0].replace(',', '.'));
+      return (isNaN(na)?Infinity:na) - (isNaN(nb)?Infinity:nb);
+    });
+    _charts['potval'] = new Chart(document.getElementById('chartPotVal'), {
       type: 'bar',
       data: {
-        labels: Object.keys(faixas),
-        datasets:[{ data: Object.values(faixas), backgroundColor:'#4fa3e0', borderRadius:4, borderSkipped:false }]
+        labels: potValSorted.map(([k]) => k),
+        datasets:[{ data: potValSorted.map(([,v]) => v), backgroundColor:'#f5c518', borderRadius:4, borderSkipped:false }]
       },
       options: {
         plugins:{ legend:{display:false} },
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}} },
+        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}, beginAtZero:true} },
         responsive:true, maintainAspectRatio:false
       }
     });
-    document.getElementById('chartPotencia').style.height = '160px';
+    const pvCanvas = document.getElementById('chartPotVal'); if (pvCanvas) pvCanvas.style.height = '200px';
 
     // ── GRÁFICO 3: por Carcaça ──
     destroyChart('car');
@@ -2076,7 +2072,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField
+    collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField, enableNetwork
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
   import { getAuth, signInAnonymously, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -2109,18 +2105,55 @@
     const auth = getAuth(app);
     const col  = collection(db, 'motores');
 
+    // garante um usuário anônimo válido (re-loga se a sessão caiu)
+    async function ensureAuth() {
+      if (!auth.currentUser) await signInAnonymously(auth);
+      return auth.currentUser;
+    }
+
     // ── Store NUVEM (Firestore) ──
     const FirebaseStore = {
       mode: 'cloud',
       _unsub: null,
+      _retry: null,
+      _wired: false,
       start() {
-        if (this._unsub) return;                         // onSnapshot só uma vez
+        if (!this._unsub) this._subscribe();   // assina só se ainda não houver listener ativo
+        this._wireResilience();                // liga rede/foco uma única vez
+      },
+      // (re)cria o listener em tempo real, encerrando o anterior se existir
+      _subscribe() {
+        if (this._unsub) { try { this._unsub(); } catch {} this._unsub = null; }
         const q = query(col, orderBy('createdTS', 'desc'));
         this._unsub = onSnapshot(q, snap => {
+          if (this._retry) { clearTimeout(this._retry); this._retry = null; }   // reconectou com sucesso
           window.motors = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           try { localStorage.setItem('motors_stock', JSON.stringify(window.motors)); } catch {}
           onMotorsChanged();                             // re-render em tempo real
-        }, err => console.error('[Firestore] onSnapshot:', err));
+        }, err => {
+          // o onSnapshot é encerrado após um erro; reautentica e re-assina com backoff
+          console.error('[Firestore] onSnapshot caiu — reconectando:', (err && err.code) || err);
+          this._scheduleResubscribe(2000);
+        });
+      },
+      // reassina após um atraso, garantindo rede ligada + login válido (1 pendência por vez)
+      _scheduleResubscribe(delay = 500) {
+        if (this._retry) return;
+        this._retry = setTimeout(async () => {
+          this._retry = null;
+          try { await enableNetwork(db); } catch {}
+          try { await ensureAuth(); } catch (e) { console.error('[Auth] re-login falhou:', e); }
+          this._subscribe();
+        }, delay);
+      },
+      // reconexão automática: volta da rede e volta de foco na aba (app aberto por horas)
+      _wireResilience() {
+        if (this._wired) return;
+        this._wired = true;
+        window.addEventListener('online', () => this._scheduleResubscribe(300));
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') this._scheduleResubscribe(300);
+        });
       },
       async add(data)        { await addDoc(col, { ...data, createdAt: new Date().toLocaleDateString('pt-BR'), createdTS: Date.now() }); },
       async update(id, data) {
