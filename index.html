@@ -1695,6 +1695,20 @@
      SALVAR MOTOR
   ══════════════════════════════════════════ */
   async function saveMotor() {
+    // ── PROTEÇÃO ANTI-PERDA (opção 1) ──────────────────────────────────────
+    // Quando o Firebase está configurado (uso real com nuvem), só deixa salvar
+    // se o app já estiver no modo NUVEM. Isso impede que um cadastro caia só no
+    // localStorage e seja apagado na próxima sincronização com a nuvem (foi o
+    // que aconteceu com o motor cadastrado logo após a migração).
+    // Só libera gravação local quando o Firebase NÃO está configurado
+    // (FB.configured === false, modo de desenvolvimento/offline proposital).
+    const fbConfigurado = window.FB ? window.FB.configured : null; // null = módulo ainda não carregou
+    const emNuvem = !!(window.Store && window.Store.mode === 'cloud');
+    if (fbConfigurado !== false && !emNuvem) {
+      flash('⏳ Conectando à nuvem… aguarde alguns segundos e salve de novo (não gravamos só no aparelho para não perder o cadastro).');
+      return;
+    }
+
     const carcaca = document.getElementById('f_carcaca').value.trim();
     if (!carcaca){flash('⚠ Informe a Carcaça');return;}
     const potencia = document.getElementById('f_potencia').value.trim();
