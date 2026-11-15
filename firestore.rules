@@ -19,6 +19,8 @@ service cloud.firestore {
       return d.keys().hasOnly(['tag','carcaca','fabricante','potencia','amp','fs',
                                'rpm','polos','eixo','obs',
                                'flange','flangeFuros','baseFixacao',
+                               'status','localAtual','historico',
+                               'testado','dataTeste','turnoTeste',
                                'createdAt','updatedAt','createdTS'])
         // obrigatórios
         && 'carcaca'  in d && d.carcaca  is string && d.carcaca.size()  >= 1 && d.carcaca.size()  <= 60
@@ -36,6 +38,14 @@ service cloud.firestore {
         && (!('flange'      in d) || d.flange      is bool)
         && (!('baseFixacao' in d) || d.baseFixacao is bool)
         && (!('flangeFuros' in d) || (d.flangeFuros is number && d.flangeFuros >= 0 && d.flangeFuros <= 100))
+        // movimentação/status: status (string), localAtual (string), historico (array)
+        && (!('status'     in d) || (d.status     is string && d.status.size()     <= 20))
+        && (!('localAtual' in d) || (d.localAtual is string && d.localAtual.size() <= 120))
+        && (!('historico'  in d) || (d.historico is list && d.historico.size() <= 500))
+        // teste: testado (bool); dataTeste/turnoTeste (string) só quando testado = true
+        && (!('testado'    in d) || d.testado is bool)
+        && (!('dataTeste'  in d) || (d.dataTeste  is string && d.dataTeste.size()  <= 20))
+        && (!('turnoTeste' in d) || (d.turnoTeste is string && d.turnoTeste.size() <= 20))
         && (!('createdAt'  in d) || (d.createdAt  is string && d.createdAt.size()  <= 20))
         && (!('updatedAt'  in d) || (d.updatedAt  is string && d.updatedAt.size()  <= 20))
         && (!('createdTS'  in d) || d.createdTS is number);

@@ -266,6 +266,13 @@
   .fg input::placeholder { color: var(--input-ph); }
   .fg input.elec:focus { border-color: var(--elec); box-shadow: 0 0 0 2px rgba(79,163,224,.12); }
   .fg input.mec:focus  { border-color: var(--mec);  box-shadow: 0 0 0 2px rgba(94,207,138,.12); }
+  .fg select {
+    background: var(--input-bg); border: 1px solid var(--navy-light);
+    border-radius: var(--radius); color: var(--white); font-size: 13px;
+    font-family: 'Share Tech Mono', monospace; padding: 8px 11px;
+    outline: none; transition: border-color .15s, box-shadow .15s; width: 100%; cursor: pointer;
+  }
+  .fg select:focus { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(245,197,24,.12); }
   .polo-hint { min-height: 22px; display: flex; align-items: center; }
   .polo-badge-form {
     display: inline-flex; align-items: center; gap: 5px;
@@ -347,6 +354,82 @@
   .np-obs { font-size: 11px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
   .np-date { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #4a5570; }
 
+  /* ══ STATUS / MOVIMENTAÇÃO ══ */
+  .np-id-top { flex-wrap: wrap; }
+  .np-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 3px; border: 1px solid;
+    font-family: 'Inter', sans-serif;
+  }
+  .np-status .sdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .np-local {
+    display: flex; align-items: center; gap: 5px; margin-top: 4px;
+    font-size: 11px; color: var(--muted); font-family: 'Share Tech Mono', monospace;
+  }
+  .np-local svg { width: 12px; height: 12px; color: var(--yellow); flex-shrink: 0; }
+
+  .np-mov {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 9px 14px; border-top: 1px solid var(--navy-light);
+  }
+  .btn-mov {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 11px; border-radius: var(--radius);
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    font-family: 'Inter', sans-serif; letter-spacing: .02em;
+    background: transparent; border: 1px solid var(--navy-light); color: var(--muted);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .btn-mov:active { transform: scale(.97); }
+  .btn-mov svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .btn-mov.mov-uso            { color: var(--yellow);  border-color: rgba(245,197,24,.4); }
+  .btn-mov.mov-uso:hover      { background: rgba(245,197,24,.12); }
+  .btn-mov.mov-conserto       { color: var(--danger);  border-color: #c03a3a; }
+  .btn-mov.mov-conserto:hover { background: rgba(224,82,82,.1); }
+  .btn-mov.mov-estoque        { color: var(--success); border-color: rgba(46,204,122,.4); }
+  .btn-mov.mov-estoque:hover  { background: rgba(46,204,122,.12); }
+  .btn-mov.mov-hist           { margin-left: auto; }
+  .btn-mov.mov-hist:hover     { color: var(--white); border-color: var(--muted); }
+
+  /* ══ FILTRO POR STATUS ══ */
+  .status-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .sfilter {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px;
+    border: 1px solid var(--navy-light); background: var(--card-bg);
+    color: var(--muted); font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .sfilter .cdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .sfilter .cnt { font-family: 'Share Tech Mono', monospace; opacity: .75; }
+  .sfilter.active { background: var(--navy-mid); border-color: var(--yellow); color: var(--white); }
+  .sfilter.active .cnt { opacity: 1; color: var(--yellow); }
+
+  /* ══ MODAL: input de movimentação + histórico ══ */
+  .mov-input {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--navy-light);
+    border-radius: var(--radius); color: var(--white); font-size: 14px;
+    font-family: 'Share Tech Mono', monospace; padding: 11px 13px; outline: none;
+    margin-bottom: 18px; transition: border-color .15s, box-shadow .15s;
+  }
+  .mov-input:focus { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(245,197,24,.12); }
+  .modal-hist { max-width: 360px; text-align: left; }
+  .modal-hist h3 { text-align: left; }
+  .hist-list { max-height: 50vh; overflow-y: auto; margin-bottom: 18px; }
+  .hist-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 20px 0; }
+  .hist-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--navy-light);
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); margin-top: 4px; flex-shrink: 0; }
+  .hist-body { flex: 1; min-width: 0; }
+  .hist-acao { font-size: 13px; font-weight: 600; color: var(--white); }
+  .hist-local { font-size: 11px; color: var(--muted); font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+  .hist-data { font-size: 11px; color: var(--muted); font-family: 'Share Tech Mono', monospace; white-space: nowrap; flex-shrink: 0; }
+
   /* ══ BOTÃO EXCEL ══ */
   .btn-excel {
     display: inline-flex; align-items: center; gap: 6px;
@@ -387,6 +470,8 @@
   .kpi.kpi-elec   .kpi-value, .kpi.kpi-elec   .kpi-top svg { color: var(--elec); }
   .kpi.kpi-mec    .kpi-value, .kpi.kpi-mec    .kpi-top svg { color: var(--mec); }
   .kpi.kpi-ai     .kpi-value, .kpi.kpi-ai     .kpi-top svg { color: var(--ai); }
+  .kpi.kpi-danger::before { background: var(--danger); }
+  .kpi.kpi-danger .kpi-value, .kpi.kpi-danger .kpi-top svg { color: var(--danger); }
 
   .dash-grid {
     display: grid;
@@ -687,6 +772,36 @@
       </div>
     </div>
 
+    <!-- TESTE -->
+    <div class="fcard">
+      <div class="fcard-title"><div class="stripe" style="background:var(--success)"></div><span>Teste</span></div>
+      <div class="fcard-body">
+        <div class="form-row single">
+          <div class="fg">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="f_testado" onchange="toggleTestado(this.checked)" style="width:17px;height:17px;cursor:pointer;">
+              <span>Motor foi testado?</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-row" id="testeWrap" style="display:none">
+          <div class="fg">
+            <label>Data do teste</label>
+            <input type="date" id="f_dataTeste" class="mec">
+          </div>
+          <div class="fg">
+            <label>Turno</label>
+            <select id="f_turnoTeste" class="mec">
+              <option value="">—</option>
+              <option value="1º turno">1º turno</option>
+              <option value="2º turno">2º turno</option>
+              <option value="3º turno">3º turno</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="edit-banner" id="editBanner" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Modo edição — você está alterando um motor existente
@@ -725,6 +840,7 @@
         Excel
       </button>
     </div>
+    <div class="status-filter" id="statusFilter"></div>
     <div class="section-label" id="listLabel"></div>
     <div id="motorList"></div>
   </div>
@@ -738,24 +854,20 @@
     <!-- Gráficos -->
     <div class="dash-grid">
       <div class="dash-card">
-        <div class="dash-card-title">Motores por Fabricante</div>
-        <canvas id="chartFabricante"></canvas>
-      </div>
-      <div class="dash-card">
-        <div class="dash-card-title">Motores por Nº de Polos</div>
-        <canvas id="chartPolos"></canvas>
-      </div>
-      <div class="dash-card dash-card-wide">
-        <div class="dash-card-title">Distribuição por Potência (cv/kW)</div>
-        <canvas id="chartPotencia"></canvas>
+        <div class="dash-card-title">Status do Estoque</div>
+        <canvas id="chartStatus"></canvas>
       </div>
       <div class="dash-card">
         <div class="dash-card-title">Motores por Carcaça</div>
         <canvas id="chartCarcaca"></canvas>
       </div>
-      <div class="dash-card">
-        <div class="dash-card-title">Cadastros por Mês</div>
-        <canvas id="chartMes"></canvas>
+      <div class="dash-card dash-card-wide">
+        <div class="dash-card-title">Cobertura por Faixa de Potência (cv)</div>
+        <canvas id="chartPotencia"></canvas>
+      </div>
+      <div class="dash-card dash-card-wide">
+        <div class="dash-card-title">Movimentações por Mês (saídas × retornos)</div>
+        <canvas id="chartMov"></canvas>
       </div>
     </div>
 
@@ -793,13 +905,38 @@
   </div>
 </div>
 
+<!-- ══ MODAL: retirar do estoque (informar destino) ══ -->
+<div class="overlay" id="movOverlay">
+  <div class="modal">
+    <h3>Retirar do estoque</h3>
+    <p>Informe o equipamento / linha de destino.</p>
+    <input type="text" id="movLocal" class="mov-input" placeholder="ex: Linha 3 - Forno" autocomplete="off"
+           onkeydown="if(event.key==='Enter') confirmMov()">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeMov()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmMov()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: histórico de movimentações ══ -->
+<div class="overlay" id="histOverlay">
+  <div class="modal modal-hist">
+    <h3 id="histTitle">Histórico</h3>
+    <div class="hist-list" id="histList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeHist()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- canvas oculto para captura de frame da câmera -->
 <canvas id="snapCanvas" style="display:none"></canvas>
 
 <!-- Chart.js (local — sem CDN em runtime) -->
 <script src="/lib/chart.umd.min.js"></script>
-<!-- SheetJS para exportar Excel (local — sem CDN em runtime) -->
-<script src="/lib/xlsx.full.min.js"></script>
+<!-- ExcelJS para exportar Excel profissional — estilos/freeze/autofiltro (local — sem CDN em runtime) -->
+<script src="/lib/exceljs.min.js"></script>
 
 <script>
   /* ══════════════════════════════════════════
@@ -905,50 +1042,49 @@
     if (!motors.length) {
       document.getElementById('kpiRow').innerHTML =
         '<div class="dash-empty" style="grid-column:1/-1">Nenhum motor cadastrado ainda.</div>';
-      ['chartFabricante','chartPolos','chartPotencia','chartCarcaca','chartMes']
+      ['chartStatus','chartCarcaca','chartPotencia','chartMov']
         .forEach(id => { const c=document.getElementById(id); if(c) c.parentElement.innerHTML=`<div class="dash-card-title">${c.parentElement.querySelector('.dash-card-title').textContent}</div><div class="dash-empty">Sem dados</div>`; });
       return;
     }
 
-    // ── KPIs ──
+    // ── KPIs (foco em manutenção/disponibilidade) ──
     const totalMotores = motors.length;
-    const fabricantes  = [...new Set(motors.map(m=>m.fabricante||'—').filter(Boolean))];
-    const potencias    = motors.map(m => parsePot(m.potencia)).filter(v=>v>0);
-    const potMedia     = potencias.length ? (potencias.reduce((a,b)=>a+b,0)/potencias.length).toFixed(1) : '—';
-    const ultimoCad    = motors[0]?.createdAt || '—';
+    const nEstoque  = motors.filter(m => statusInfo(m).key === 'estoque').length;
+    const nUso      = motors.filter(m => statusInfo(m).key === 'uso').length;
+    const nConserto = motors.filter(m => statusInfo(m).key === 'conserto').length;
+    const taxaDisp  = totalMotores ? Math.round((nEstoque / totalMotores) * 100) : 0;
 
     document.getElementById('kpiRow').innerHTML = `
+      <div class="kpi kpi-mec">
+        <div class="kpi-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 7L9 18l-5-5"/></svg>
+          <span class="kpi-label">Disponíveis</span>
+        </div>
+        <div class="kpi-value">${nEstoque}</div><div class="kpi-sub">em estoque</div>
+      </div>
       <div class="kpi kpi-yellow">
         <div class="kpi-top">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
-          <span class="kpi-label">Total de Motores</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2-2 2.6-2.6z"/></svg>
+          <span class="kpi-label">Em uso</span>
         </div>
-        <div class="kpi-value">${totalMotores}</div><div class="kpi-sub">cadastrados</div>
+        <div class="kpi-value">${nUso}</div><div class="kpi-sub">em operação</div>
+      </div>
+      <div class="kpi kpi-danger">
+        <div class="kpi-top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="kpi-label">Em conserto</span>
+        </div>
+        <div class="kpi-value">${nConserto}</div><div class="kpi-sub">manutenção</div>
       </div>
       <div class="kpi kpi-elec">
         <div class="kpi-top">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
-          <span class="kpi-label">Fabricantes</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span class="kpi-label">Disponibilidade</span>
         </div>
-        <div class="kpi-value">${fabricantes.length}</div><div class="kpi-sub">diferentes</div>
-      </div>
-      <div class="kpi kpi-mec">
-        <div class="kpi-top">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span class="kpi-label">Potência Média</span>
-        </div>
-        <div class="kpi-value">${potMedia}</div><div class="kpi-sub">cv (estimado)</div>
-      </div>
-      <div class="kpi kpi-ai">
-        <div class="kpi-top">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          <span class="kpi-label">Último Cadastro</span>
-        </div>
-        <div class="kpi-value" style="font-size:15px;margin-top:2px">${ultimoCad}</div><div class="kpi-sub">&nbsp;</div>
+        <div class="kpi-value">${taxaDisp}%</div><div class="kpi-sub">${nEstoque}/${totalMotores} em estoque</div>
       </div>
     `;
 
-    const COLORS = ['#4fa3e0','#5ecf8a','#f5c518','#b57bee','#e05252','#f0984a','#50d9d0','#e06bb5','#8891a4','#aad4f5'];
     const css = getComputedStyle(document.documentElement);
     const gridColor   = css.getPropertyValue('--grid').trim()    || 'rgba(46,64,112,.5)';
     const textColor   = css.getPropertyValue('--muted').trim()   || '#8891a4';
@@ -957,45 +1093,26 @@
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
 
-    // ── GRÁFICO 1: por Fabricante ──
-    destroyChart('fab');
-    const fabCount = {};
-    motors.forEach(m => { const f=m.fabricante||'Sem info'; fabCount[f]=(fabCount[f]||0)+1; });
-    const fabSorted = Object.entries(fabCount).sort((a,b)=>b[1]-a[1]);
-    _charts['fab'] = new Chart(document.getElementById('chartFabricante'), {
-      type: 'bar',
-      data: {
-        labels: fabSorted.map(([k])=>k),
-        datasets:[{ data: fabSorted.map(([,v])=>v), backgroundColor: COLORS, borderRadius: 4, borderSkipped: false }]
-      },
-      options: {
-        plugins:{ legend:{display:false} },
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}} },
-        responsive:true, maintainAspectRatio:true
-      }
-    });
-
-    // ── GRÁFICO 2: por Polos ──
-    destroyChart('pol');
-    const polCount = {};
-    motors.forEach(m => {
-      const p = m.polos || getPolos(m.rpm) || 'N/D';
-      polCount[p]=(polCount[p]||0)+1;
-    });
-    const polSorted = Object.entries(polCount).sort((a,b)=>a[0].localeCompare(b[0]));
-    _charts['pol'] = new Chart(document.getElementById('chartPolos'), {
+    // ── GRÁFICO 1: Status do Estoque (rosca) ──
+    destroyChart('status');
+    const statusData = [
+      { label:'Em estoque',  val:nEstoque,  color:'#2ecc7a' },
+      { label:'Em uso',      val:nUso,      color:'#f5c518' },
+      { label:'Em conserto', val:nConserto, color:'#e05252' },
+    ];
+    _charts['status'] = new Chart(document.getElementById('chartStatus'), {
       type: 'doughnut',
       data: {
-        labels: polSorted.map(([k])=>k),
-        datasets:[{ data: polSorted.map(([,v])=>v), backgroundColor: COLORS, borderWidth:2, borderColor: cardBgColor }]
+        labels: statusData.map(s=>s.label),
+        datasets:[{ data: statusData.map(s=>s.val), backgroundColor: statusData.map(s=>s.color), borderWidth:2, borderColor: cardBgColor }]
       },
       options: {
-        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:10, font:{size:11} } } },
-        responsive:true, maintainAspectRatio:true, cutout:'60%'
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:12, font:{size:11} } } },
+        responsive:true, maintainAspectRatio:true, cutout:'62%'
       }
     });
 
-    // ── GRÁFICO 3: por Potência (histograma de faixas) ──
+    // ── GRÁFICO 2: por Potência (histograma de faixas) ──
     destroyChart('pot');
     const faixas = {'< 1 cv':0,'1–5 cv':0,'5–10 cv':0,'10–25 cv':0,'25–50 cv':0,'50–100 cv':0,'> 100 cv':0,'N/D':0};
     motors.forEach(m => {
@@ -1023,7 +1140,7 @@
     });
     document.getElementById('chartPotencia').style.height = '160px';
 
-    // ── GRÁFICO 4: por Carcaça ──
+    // ── GRÁFICO 3: por Carcaça ──
     destroyChart('car');
     const carCount = {};
     motors.forEach(m => { const c=m.carcaca||'N/D'; carCount[c]=(carCount[c]||0)+1; });
@@ -1042,34 +1159,35 @@
       }
     });
 
-    // ── GRÁFICO 5: por Mês de Cadastro ──
-    destroyChart('mes');
-    const mesCount = {};
+    // ── GRÁFICO 4: Movimentações por Mês (saídas × retornos, via histórico) ──
+    // Saídas = retirado p/ uso + enviado p/ conserto (deixou o estoque); Retornos = voltou ao estoque.
+    destroyChart('mov');
+    const saidas = {}, retornos = {};
+    const mesKey = d => { const p=(d||'').split('/'); return p.length===3 ? p[1]+'/'+p[2] : null; };
     motors.forEach(m => {
-      if (!m.createdAt) return;
-      const parts = m.createdAt.split('/');
-      if (parts.length===3) {
-        const key = parts[1]+'/'+parts[2]; // MM/AAAA
-        mesCount[key]=(mesCount[key]||0)+1;
-      }
+      (Array.isArray(m.historico) ? m.historico : []).forEach(h => {
+        const k = mesKey(h.data); if (!k) return;
+        if (h.acao === 'Retirado para uso' || h.acao === 'Enviado para conserto') saidas[k]=(saidas[k]||0)+1;
+        else if (h.acao === 'Retornado ao estoque') retornos[k]=(retornos[k]||0)+1;
+      });
     });
-    const mesSorted = Object.entries(mesCount).sort((a,b)=>a[0].localeCompare(b[0]));
-    _charts['mes'] = new Chart(document.getElementById('chartMes'), {
-      type: 'line',
+    const movMeses = [...new Set([...Object.keys(saidas), ...Object.keys(retornos)])].sort((a,b)=>a.localeCompare(b));
+    _charts['mov'] = new Chart(document.getElementById('chartMov'), {
+      type: 'bar',
       data: {
-        labels: mesSorted.map(([k])=>k),
-        datasets:[{
-          data: mesSorted.map(([,v])=>v),
-          borderColor:'#b57bee', backgroundColor:'rgba(181,123,238,.12)',
-          tension:.35, fill:true, pointRadius:4, pointBackgroundColor:'#b57bee'
-        }]
+        labels: movMeses,
+        datasets:[
+          { label:'Saídas',   data: movMeses.map(k=>saidas[k]||0),   backgroundColor:'#f5c518', borderRadius:4, borderSkipped:false },
+          { label:'Retornos', data: movMeses.map(k=>retornos[k]||0), backgroundColor:'#4fa3e0', borderRadius:4, borderSkipped:false },
+        ]
       },
       options: {
-        plugins:{ legend:{display:false} },
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}} },
-        responsive:true, maintainAspectRatio:true
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:12, font:{size:11} } } },
+        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}, beginAtZero:true} },
+        responsive:true, maintainAspectRatio:false
       }
     });
+    const movCanvas = document.getElementById('chartMov'); if (movCanvas) movCanvas.style.height = '200px';
   }
 
   // extrai valor numérico de potência em cv
@@ -1095,54 +1213,183 @@
   /* ══════════════════════════════════════════
      EXPORTAR EXCEL (SheetJS)
   ══════════════════════════════════════════ */
-  function exportarExcel() {
+  async function exportarExcel() {
     if (!motors.length) { flash('⚠ Nenhum motor para exportar'); return; }
+    flash('⏳ Gerando Excel...');
 
-    const wb = XLSX.utils.book_new();
+    // paleta ARGB (ExcelJS usa AARRGGBB)
+    const C = {
+      navy:'FF1A2744', white:'FFFFFFFF', grid:'FFD6DBE6', zebra:'FFF4F6FB',
+      estoque:'FFD7F5E4', estoqueTx:'FF1E7A46',
+      uso:'FFFDF3CF',     usoTx:'FF8A6D00',
+      conserto:'FFF8D7DA', consertoTx:'FF9B2C2C',
+    };
+    const thin   = { style:'thin', color:{argb:C.grid} };
+    const border = { top:thin, left:thin, bottom:thin, right:thin };
+    const statusCell = {
+      estoque:{ bg:C.estoque, tx:C.estoqueTx },
+      uso:    { bg:C.uso,     tx:C.usoTx },
+      conserto:{ bg:C.conserto, tx:C.consertoTx },
+    };
 
-    // ── Aba 1: Listagem completa ──
-    const cabecalho = ['Tag','Carcaça','Fabricante','Potência','Amperagem','Fator de Serviço','RPM','Polos','Eixo Ø (mm)','Observações','Data Cadastro'];
-    const linhas = motors.map(m => [
-      m.tag||'', m.carcaca||'', m.fabricante||'', m.potencia||'',
-      m.amp||'', m.fs||'', m.rpm||'', m.polos||getPolos(m.rpm)||'',
-      m.eixo||'', m.obs||'', m.createdAt||''
-    ]);
-    const ws1 = XLSX.utils.aoa_to_sheet([cabecalho, ...linhas]);
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Motor Stock';
+    wb.created = new Date();
 
-    // larguras de coluna
-    ws1['!cols'] = [8,10,14,12,10,14,8,8,12,30,12].map(w=>({wch:w}));
+    /* ════ ABA 1: MOTORES ════ */
+    const ws = wb.addWorksheet('Motores', { views:[{ state:'frozen', ySplit:1 }] }); // congela a 1ª linha
+    const cols = [
+      { header:'Tag',             key:'tag',    width:12 },
+      { header:'Carcaça',         key:'carc',   width:10 },
+      { header:'Fabricante',      key:'fab',    width:16 },
+      { header:'Status',          key:'status', width:14 },
+      { header:'Local Atual',     key:'local',  width:20 },
+      { header:'Potência',        key:'pot',    width:13 },
+      { header:'Amperagem',       key:'amp',    width:11 },
+      { header:'Fator de Serviço',key:'fs',     width:15 },
+      { header:'RPM',             key:'rpm',    width:9  },
+      { header:'Polos',           key:'polos',  width:8  },
+      { header:'Eixo Ø (mm)',     key:'eixo',   width:12 },
+      { header:'Flange',          key:'flange', width:9  },
+      { header:'Furos',           key:'furos',  width:8  },
+      { header:'Base Fixação',    key:'base',   width:13 },
+      { header:'Observações',     key:'obs',    width:34 },
+      { header:'Cadastro',        key:'cad',    width:12 },
+    ];
+    ws.columns = cols;
 
-    // estilo do cabeçalho (SheetJS CE não suporta estilos nativos, mas define freezerow)
-    ws1['!freeze'] = { xSplit:0, ySplit:1 };
+    // cabeçalho: fundo navy, negrito, texto branco, centralizado
+    const head = ws.getRow(1);
+    head.height = 20;
+    head.eachCell(c => {
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.navy} };
+      c.font = { bold:true, color:{argb:C.white}, size:11 };
+      c.alignment = { horizontal:'center', vertical:'middle' };
+      c.border = border;
+    });
 
-    XLSX.utils.book_append_sheet(wb, ws1, 'Motores');
+    // linhas de dados (com zebra + formatação condicional por status)
+    motors.forEach((m, i) => {
+      const si = statusInfo(m);
+      const row = ws.addRow({
+        tag:   m.tag || '',
+        carc:  m.carcaca || '',
+        fab:   m.fabricante || '',
+        status: si.label,
+        local: (si.key === 'uso' ? (m.localAtual || '') : ''),
+        pot:   m.potencia || '',
+        amp:   m.amp || '',
+        fs:    m.fs || '',
+        rpm:   m.rpm || '',
+        polos: m.polos || getPolos(m.rpm) || '',
+        eixo:  m.eixo || '',
+        flange: m.flange ? 'Sim' : 'Não',
+        furos: (m.flange && m.flangeFuros != null) ? m.flangeFuros : '',
+        base:  m.baseFixacao ? 'Sim' : 'Não',
+        obs:   m.obs || '',
+        cad:   m.createdAt || '',
+      });
+      row.eachCell({ includeEmpty:true }, c => {
+        c.border = border;
+        c.alignment = Object.assign({ vertical:'middle' }, c.alignment);
+        if (i % 2 === 1) c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.zebra} };
+      });
+      // formatação condicional: cor da célula "Status" conforme o estado
+      const sc = statusCell[si.key];
+      if (sc) {
+        const cell = row.getCell('status');
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:sc.bg} };
+        cell.font = { bold:true, color:{argb:sc.tx} };
+        cell.alignment = { horizontal:'center', vertical:'middle' };
+      }
+    });
 
-    // ── Aba 2: Resumo por Fabricante ──
-    const fabMap = {};
-    motors.forEach(m => { const f=m.fabricante||'Sem info'; fabMap[f]=(fabMap[f]||0)+1; });
-    const ws2 = XLSX.utils.aoa_to_sheet([
-      ['Fabricante','Qtd. Motores','% do Total'],
-      ...Object.entries(fabMap).sort((a,b)=>b[1]-a[1]).map(([f,q])=>[f,q,`${((q/motors.length)*100).toFixed(1)}%`]),
-      ['TOTAL', motors.length, '100%']
-    ]);
-    ws2['!cols'] = [{wch:18},{wch:14},{wch:12}];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Resumo Fabricantes');
+    // autofiltro em todas as colunas
+    ws.autoFilter = { from:{ row:1, column:1 }, to:{ row:1, column:cols.length } };
 
-    // ── Aba 3: Resumo por Polos ──
-    const polMap = {};
-    motors.forEach(m => { const p=m.polos||getPolos(m.rpm)||'N/D'; polMap[p]=(polMap[p]||0)+1; });
-    const ws3 = XLSX.utils.aoa_to_sheet([
-      ['Nº de Polos','Qtd. Motores','% do Total'],
-      ...Object.entries(polMap).sort().map(([p,q])=>[p,q,`${((q/motors.length)*100).toFixed(1)}%`]),
-      ['TOTAL', motors.length, '100%']
-    ]);
-    ws3['!cols'] = [{wch:14},{wch:14},{wch:12}];
-    XLSX.utils.book_append_sheet(wb, ws3, 'Resumo Polos');
+    /* ════ ABA 2: RESUMO (indicadores) ════ */
+    const total     = motors.length;
+    const nEstoque  = motors.filter(m => statusInfo(m).key === 'estoque').length;
+    const nUso      = motors.filter(m => statusInfo(m).key === 'uso').length;
+    const nConserto = motors.filter(m => statusInfo(m).key === 'conserto').length;
+    const taxa      = total ? Math.round((nEstoque/total)*100) : 0;
+    const pct       = q => total ? `${Math.round(q/total*100)}%` : '0%';
 
-    // ── download ──
-    const data = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
-    XLSX.writeFile(wb, `MotorStock_${data}.xlsx`);
-    flash('✓ Excel gerado com sucesso');
+    const rs = wb.addWorksheet('Resumo');
+    rs.columns = [ { width:30 }, { width:14 }, { width:12 } ];
+
+    const titulo = texto => {
+      const r = rs.addRow([texto]);
+      r.getCell(1).font = { bold:true, size:12, color:{argb:C.navy} };
+      r.height = 18;
+    };
+    const cabResumo = (a,b,c) => {
+      const r = rs.addRow([a,b,c]);
+      r.eachCell(cell => {
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.navy} };
+        cell.font = { bold:true, color:{argb:C.white} };
+        cell.alignment = { vertical:'middle' };
+        cell.border = border;
+      });
+    };
+
+    titulo('Indicadores de Estoque');
+    cabResumo('Indicador','Valor','% Total');
+    const indLinhas = [
+      ['Total de motores', total, '100%'],
+      ['Disponíveis (em estoque)', nEstoque, pct(nEstoque)],
+      ['Em uso', nUso, pct(nUso)],
+      ['Em conserto', nConserto, pct(nConserto)],
+      ['Taxa de disponibilidade', `${taxa}%`, ''],
+    ];
+    const paintMap = { 1:statusCell.estoque, 2:statusCell.uso, 3:statusCell.conserto };
+    indLinhas.forEach((ln, idx) => {
+      const r = rs.addRow(ln);
+      r.eachCell({ includeEmpty:true }, c => { c.border = border; });
+      const paint = paintMap[idx];
+      if (paint) {
+        const cell = r.getCell(1);
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:paint.bg} };
+        cell.font = { bold:true, color:{argb:paint.tx} };
+      }
+      if (idx === 4) { r.getCell(1).font = { bold:true }; r.getCell(2).font = { bold:true }; }
+    });
+
+    rs.addRow([]);
+    titulo('Cobertura por Faixa de Potência');
+    cabResumo('Faixa (cv)','Qtd. Motores','% Total');
+    const faixas = {'< 1 cv':0,'1–5 cv':0,'5–10 cv':0,'10–25 cv':0,'25–50 cv':0,'50–100 cv':0,'> 100 cv':0,'N/D':0};
+    motors.forEach(m => {
+      const v = parsePot(m.potencia);
+      if (!v)         faixas['N/D']++;
+      else if (v<1)   faixas['< 1 cv']++;
+      else if (v<5)   faixas['1–5 cv']++;
+      else if (v<10)  faixas['5–10 cv']++;
+      else if (v<25)  faixas['10–25 cv']++;
+      else if (v<50)  faixas['25–50 cv']++;
+      else if (v<100) faixas['50–100 cv']++;
+      else            faixas['> 100 cv']++;
+    });
+    Object.entries(faixas).forEach(([f,q]) => {
+      const r = rs.addRow([f, q, pct(q)]);
+      r.eachCell({ includeEmpty:true }, c => { c.border = border; });
+    });
+
+    /* ════ DOWNLOAD ════ */
+    try {
+      const buf  = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const data = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+      a.href = url; a.download = `MotorStock_${data}.xlsx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      flash('✓ Excel gerado com sucesso');
+    } catch (e) {
+      console.error('[exportarExcel]', e);
+      flash('✗ Erro ao gerar Excel');
+    }
   }
 
   /* ══════════════════════════════════════════
@@ -1395,6 +1642,25 @@
     if (!checked) { const f = document.getElementById('f_flangeFuros'); if (f) f.value = ''; }
   }
 
+  // mostra/esconde os campos de teste (data + turno) conforme o checkbox "Motor foi testado?"
+  function toggleTestado(checked) {
+    const wrap = document.getElementById('testeWrap');
+    if (wrap) wrap.style.display = checked ? 'grid' : 'none';
+    if (!checked) {
+      const dt = document.getElementById('f_dataTeste');  if (dt) dt.value = '';
+      const tt = document.getElementById('f_turnoTeste'); if (tt) tt.value = '';
+    }
+  }
+
+  // resumo do teste pro card do estoque: "14/11 - 2º turno" (data em DD/MM, sem ano)
+  function testeResumo(m) {
+    if (!m.testado) return 'não';
+    const dd = m.dataTeste ? m.dataTeste.split('/').slice(0, 2).join('/') : '';
+    const tu = m.turnoTeste || '';
+    if (dd && tu) return dd + ' - ' + tu;
+    return dd || tu || 'sim';
+  }
+
   /* ══════════════════════════════════════════
      SALVAR MOTOR
   ══════════════════════════════════════════ */
@@ -1435,6 +1701,15 @@
       if (Number.isFinite(n) && n >= 0) dados.flangeFuros = n;
     }
 
+    // teste: testado (bool); dataTeste/turnoTeste só quando testado = true
+    const testado = document.getElementById('f_testado').checked;
+    dados.testado = testado;
+    if (testado) {
+      const dtRaw = document.getElementById('f_dataTeste').value;   // YYYY-MM-DD do input date
+      dados.dataTeste  = dtRaw ? (() => { const [y, mo, d] = dtRaw.split('-'); return `${d}/${mo}/${y}`; })() : '';
+      dados.turnoTeste = document.getElementById('f_turnoTeste').value || '';
+    }
+
     // trava o botão enquanto grava, pra não duplicar no clique duplo
     const btnSave = document.getElementById('btnSalvar');
     if (btnSave) btnSave.disabled = true;
@@ -1446,7 +1721,9 @@
         flash('✓ Motor atualizado');
         editingId = null;
       } else {
-        // ── novo cadastro ──
+        // ── novo cadastro ── começa "Em estoque" + 1ª entrada no histórico
+        dados.status = 'estoque';
+        dados.historico = [{ acao: 'Cadastrado', data: hojeBR() }];
         await Store.add(dados);                  // idem — só diz "cadastrado" se realmente salvou
         flash('✓ Motor cadastrado');
       }
@@ -1467,21 +1744,143 @@
   }
 
   /* ══════════════════════════════════════════
+     MOVIMENTAÇÃO / STATUS DO MOTOR
+     status: 'estoque' | 'uso' | 'conserto'  (novo motor começa 'estoque')
+     Cada motor guarda localAtual (quando em uso) e historico[] (ação + data + local).
+  ══════════════════════════════════════════ */
+  const STATUS = {
+    estoque:  { key:'estoque',  label:'Em estoque',  color:'var(--success)', bg:'rgba(46,204,122,.12)', border:'rgba(46,204,122,.4)' },
+    uso:      { key:'uso',      label:'Em uso',      color:'var(--yellow)',  bg:'rgba(245,197,24,.12)', border:'rgba(245,197,24,.4)' },
+    conserto: { key:'conserto', label:'Em conserto', color:'var(--danger)',  bg:'rgba(224,82,82,.12)',  border:'rgba(224,82,82,.45)' },
+  };
+  function statusInfo(m) { return STATUS[m && m.status] || STATUS.estoque; }
+
+  let statusFilter = 'todos';
+  function setStatusFilter(st) { statusFilter = st; renderList(); }
+
+  // chips de filtro por status (com contagem), no topo da aba Estoque
+  function renderStatusChips() {
+    const counts = { todos: motors.length, estoque:0, uso:0, conserto:0 };
+    motors.forEach(m => { counts[statusInfo(m).key]++; });
+    const defs = [
+      { st:'todos',    label:'Todos',       color:'var(--muted)' },
+      { st:'estoque',  label:'Em estoque',  color:'var(--success)' },
+      { st:'uso',      label:'Em uso',      color:'var(--yellow)' },
+      { st:'conserto', label:'Em conserto', color:'var(--danger)' },
+    ];
+    const el = document.getElementById('statusFilter');
+    if (!el) return;
+    el.innerHTML = defs.map(d => `
+      <button class="sfilter ${statusFilter===d.st?'active':''}" onclick="setStatusFilter('${d.st}')">
+        <span class="cdot" style="background:${d.color}"></span>${d.label}<span class="cnt">${counts[d.st]}</span>
+      </button>`).join('');
+  }
+
+  // botões de ação por status, renderizados no card do estoque
+  function movButtons(m) {
+    const s = statusInfo(m).key;
+    const icoSair  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+    const icoVolta = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>';
+    const icoFerr  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2-2 2.6-2.6z"/></svg>';
+    const icoHist  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+    let b = '';
+    if (s === 'estoque') {
+      b += `<button class="btn-mov mov-uso" onclick="askRetirar('${m.id}')">${icoSair}Retirar do estoque</button>`;
+      b += `<button class="btn-mov mov-conserto" onclick="moverMotor('${m.id}','conserto')">${icoFerr}Enviar p/ conserto</button>`;
+    } else if (s === 'uso') {
+      b += `<button class="btn-mov mov-estoque" onclick="moverMotor('${m.id}','estoque')">${icoVolta}Retornar ao estoque</button>`;
+      b += `<button class="btn-mov mov-conserto" onclick="moverMotor('${m.id}','conserto')">${icoFerr}Enviar p/ conserto</button>`;
+    } else if (s === 'conserto') {
+      b += `<button class="btn-mov mov-estoque" onclick="moverMotor('${m.id}','estoque')">${icoVolta}Retornar ao estoque</button>`;
+    }
+    b += `<button class="btn-mov mov-hist" onclick="verHistorico('${m.id}')">${icoHist}Histórico</button>`;
+    return b;
+  }
+
+  // modal "Retirar do estoque" — pede o equipamento/linha de destino antes de mover p/ "uso"
+  let movTarget = null;
+  function askRetirar(id) {
+    movTarget = id;
+    document.getElementById('movLocal').value = '';
+    document.getElementById('movOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('movLocal').focus(), 80);
+  }
+  function closeMov() { document.getElementById('movOverlay').classList.remove('open'); movTarget = null; }
+  async function confirmMov() {
+    const local = document.getElementById('movLocal').value.trim();
+    if (!local) { flash('⚠ Informe o equipamento/linha'); return; }
+    const id = movTarget;
+    closeMov();
+    await moverMotor(id, 'uso', local);
+  }
+
+  // aplica a mudança de status: registra a data, atualiza localAtual e empilha no histórico
+  async function moverMotor(id, novoStatus, local) {
+    const m = motors.find(x => x.id === id);
+    if (!m) return;
+    const acaoMap = { uso:'Retirado para uso', conserto:'Enviado para conserto', estoque:'Retornado ao estoque' };
+    const hist = Array.isArray(m.historico) ? m.historico.slice() : [];
+    const entry = { acao: acaoMap[novoStatus] || 'Movimentação', data: hojeBR() };
+    if (novoStatus === 'uso' && local) entry.local = local;
+    hist.push(entry);
+    // localAtual só existe quando "em uso"; conserto e retorno ao estoque limpam o local
+    const patch = { status: novoStatus, historico: hist, localAtual: (novoStatus === 'uso' ? (local || '') : '') };
+    try {
+      await Store.update(id, patch);
+      flash('✓ ' + (acaoMap[novoStatus] || 'Movido'));
+    } catch (e) {
+      console.error('[moverMotor] falha ao gravar no Firestore:', e);
+      const code = e && e.code ? ` [${e.code}]` : '';
+      flash('✗ NÃO salvou' + code + ': ' + ((e && e.message) || String(e)));
+      if (e && e.code === 'permission-denied')
+        flash('⚠ Bloqueado pelas regras — republique o firestore.rules no Firebase.');
+    }
+  }
+
+  // modal de histórico de movimentações (mais recente primeiro)
+  function verHistorico(id) {
+    const m = motors.find(x => x.id === id);
+    if (!m) return;
+    const titulo = m.tag || ('Carcaça ' + (m.carcaca || '—'));
+    document.getElementById('histTitle').textContent = 'Histórico — ' + titulo;
+    const hist = Array.isArray(m.historico) ? m.historico : [];
+    const el = document.getElementById('histList');
+    el.innerHTML = hist.length
+      ? hist.slice().reverse().map(h => `
+          <div class="hist-item">
+            <div class="hist-dot"></div>
+            <div class="hist-body">
+              <div class="hist-acao">${escapeHtml(h.acao || '—')}</div>
+              ${h.local ? `<div class="hist-local">📍 ${escapeHtml(h.local)}</div>` : ''}
+            </div>
+            <div class="hist-data">${escapeHtml(h.data || '')}</div>
+          </div>`).join('')
+      : '<div class="hist-empty">Sem movimentações registradas.</div>';
+    document.getElementById('histOverlay').classList.add('open');
+  }
+  function closeHist() { document.getElementById('histOverlay').classList.remove('open'); }
+
+  /* ══════════════════════════════════════════
      LISTA / RENDERIZAR
   ══════════════════════════════════════════ */
   function renderList() {
+    renderStatusChips();
     const q = (document.getElementById('searchInput')?.value||'').toLowerCase();
+    // 1º filtra por status (chips), depois pela busca textual
+    const base = statusFilter==='todos' ? motors : motors.filter(m => statusInfo(m).key===statusFilter);
     const filtered = q
-      ? motors.filter(m=>
+      ? base.filter(m=>
           (m.tag||'').toLowerCase().includes(q)||
           (m.carcaca||'').toLowerCase().includes(q)||
           (m.fabricante||'').toLowerCase().includes(q)||
           (m.potencia||'').toLowerCase().includes(q)||
           (m.rpm||'').toLowerCase().includes(q)||
           (m.obs||'').toLowerCase().includes(q)||
+          (m.localAtual||'').toLowerCase().includes(q)||
+          (m.testado ? ('testado ' + (m.dataTeste||'') + ' ' + (m.turnoTeste||'')) : '').toLowerCase().includes(q)||
           ((m.flange ? ('flange ' + (m.flangeFuros!=null ? m.flangeFuros+' furos' : '')) : '') +
            (m.baseFixacao ? ' base de fixacao base fixação' : '')).toLowerCase().includes(q))
-      : motors;
+      : base;
     const lbl = document.getElementById('listLabel');
     lbl.textContent = filtered.length
       ? filtered.length+' motor'+(filtered.length!==1?'es':'')+(q?' encontrado'+(filtered.length!==1?'s':''):'s cadastrados')
@@ -1490,11 +1889,12 @@
     if (!filtered.length) {
       list.innerHTML=`<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
-        <p>${q?'Nenhum motor para "'+escapeHtml(q)+'"':'Nenhum motor cadastrado ainda.'}</p></div>`;
+        <p>${q?'Nenhum motor para "'+escapeHtml(q)+'"':(statusFilter!=='todos'?'Nenhum motor neste status.':'Nenhum motor cadastrado ainda.')}</p></div>`;
       return;
     }
     list.innerHTML = filtered.map(m => {
       const tagLabel = escapeHtml(m.tag || ('#'+String(motors.indexOf(m)+1).padStart(3,'0')));
+      const si = statusInfo(m);
       return `
       <div class="nameplate">
         <div class="np-identity">
@@ -1502,8 +1902,10 @@
             <div class="np-id-top">
               <span class="np-tag">${tagLabel}</span>
               <span class="np-carcaca">${escapeHtml(m.carcaca)}</span>
+              <span class="np-status" style="color:${si.color};border-color:${si.border};background:${si.bg}"><span class="sdot"></span>${si.label}</span>
             </div>
             ${m.fabricante?`<div class="np-fabricante">${escapeHtml(m.fabricante)}</div>`:''}
+            ${si.key==='uso' && m.localAtual?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHtml(m.localAtual)}</div>`:''}
           </div>
           <div class="np-actions">
             <button class="btn btn-ghost btn-sm" onclick="editMotor('${m.id}')" title="Editar">
@@ -1532,9 +1934,11 @@
               <div class="np-row"><span class="np-lbl">Carcaça</span><span class="np-val">${escapeHtml(m.carcaca)}</span></div>
               <div class="np-row"><span class="np-lbl">Flange</span><span class="np-val">${m.flange ? (m.flangeFuros!=null ? escapeHtml(String(m.flangeFuros))+' furos' : 'sim') : 'não'}</span></div>
               <div class="np-row"><span class="np-lbl">Base fix.</span><span class="np-val">${m.baseFixacao ? 'sim' : 'não'}</span></div>
+              <div class="np-row"><span class="np-lbl">Testado</span><span class="np-val${m.testado?' mec-col':''}">${escapeHtml(testeResumo(m))}</span></div>
             </div>
           </div>
         </div>
+        <div class="np-mov">${movButtons(m)}</div>
         <div class="np-footer">
           <span class="np-obs">${m.obs?'📝 '+escapeHtml(m.obs):''}</span>
           <span class="np-date">${m.updatedAt?'editado '+escapeHtml(m.updatedAt):escapeHtml(m.createdAt)}</span>
@@ -1557,6 +1961,13 @@
     document.getElementById('f_baseFixacao').checked = !!m.baseFixacao;
     document.getElementById('f_flangeFuros').value   = (m.flange && m.flangeFuros!=null) ? m.flangeFuros : '';
     toggleFlange(!!m.flange);
+    // campos de teste
+    document.getElementById('f_testado').checked = !!m.testado;
+    let dtInput = '';
+    if (m.testado && m.dataTeste) { const [d, mo, y] = m.dataTeste.split('/'); if (y) dtInput = `${y}-${mo}-${d}`; }
+    document.getElementById('f_dataTeste').value  = dtInput;
+    document.getElementById('f_turnoTeste').value = (m.testado && m.turnoTeste) ? m.turnoTeste : '';
+    toggleTestado(!!m.testado);
     editingId = id;                          // marca edição in-place
     setFormMode(true);
     switchTab('cadastro');
@@ -1583,6 +1994,10 @@
     document.getElementById('f_baseFixacao').checked = false;
     document.getElementById('f_flangeFuros').value = '';
     toggleFlange(false);
+    document.getElementById('f_testado').checked = false;
+    document.getElementById('f_dataTeste').value = '';
+    document.getElementById('f_turnoTeste').value = '';
+    toggleTestado(false);
     document.getElementById('poloHint').innerHTML='';
     editingId = null;
     setFormMode(false);
@@ -1712,6 +2127,8 @@
         const payload = { ...data, updatedAt: new Date().toLocaleDateString('pt-BR') };
         // ao desmarcar flange, remove flangeFuros do documento pra não deixar dado órfão
         if (data.flange === false) payload.flangeFuros = deleteField();
+        // ao desmarcar "testado", remove dataTeste/turnoTeste do documento
+        if (data.testado === false) { payload.dataTeste = deleteField(); payload.turnoTeste = deleteField(); }
         await updateDoc(doc(db, 'motores', id), payload);
       },
       async remove(id)       { await deleteDoc(doc(db, 'motores', id)); }
