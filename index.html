@@ -104,7 +104,7 @@
   .theme-toggle:hover { color: var(--yellow); border-color: var(--yellow); }
 
   /* ══ LAYOUT ══ */
-  .main { max-width: 720px; margin: 0 auto; padding: 18px 14px 48px; display: flex; flex-direction: column; gap: 14px; }
+  .main { max-width: 720px; margin: 0 auto; padding: 18px 14px calc(64px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
 
   /* ══ TABS ══ */
   .tabs { display: flex; gap: 4px; background: var(--navy); border-radius: var(--radius); padding: 4px; }
@@ -555,6 +555,18 @@
 
   /* inputs ocultos de arquivo */
   #inputFile, #inputCapture { display: none; }
+
+  /* ══ SELO MOTOR STOCK — cobre o badge "Powered by Netlify" injetado no canto ══ */
+  #msStamp {
+    position: fixed; right: 0; bottom: 0;
+    z-index: 2147483000;                 /* acima de qualquer badge injetado */
+    background: var(--bg);               /* fundo sólido cobre o badge mesmo nos cantos transparentes do selo */
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-top-left-radius: 10px;
+    line-height: 0;
+  }
+  #msStamp img { display: block; width: 132px; height: auto; }
+  @media (max-width: 420px) { #msStamp img { width: 112px; } }
 </style>
 </head>
 <body>
@@ -889,6 +901,9 @@
     <div class="lock-msg" id="lockMsg"></div>
   </div>
 </div>
+
+<!-- Selo Motor Stock — cobre o badge "Powered by Netlify" injetado pelo Netlify no canto inferior direito -->
+<div id="msStamp" aria-hidden="true"><img src="/icons/selo-motorstock.png" alt="Motor Stock"></div>
 
 <div class="toast" id="toast"></div>
 <div class="overlay" id="overlay">
