@@ -4,6 +4,8 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  # HSTS: obriga o navegador a só acessar via HTTPS por 1 ano (sem 'preload' p/ ser reversível).
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   # CSP: libera só o necessário. Firebase (Firestore + Auth anônimo) + self.
   # Fontes agora são locais (/fonts/*.woff2) — font-src 'self', sem CDN de fontes.
   # A IA roda na Pages Function (servidor) — api.cloudflare.com NÃO precisa entrar aqui.

@@ -242,8 +242,9 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
     }
 
     if (!campos) {
+      // Detalhe (texto bruto da IA) fica só no log do servidor — não vaza ao cliente.
       console.error('[ler-placa] Falha no parse após retry. Bruto:', ultimoBruto);
-      return new Response(JSON.stringify({ erro: 'IA não devolveu JSON', bruto: ultimoBruto }), { status: 502 });
+      return new Response(JSON.stringify({ erro: 'Não consegui ler a placa. Tente uma foto mais nítida e próxima.' }), { status: 502 });
     }
 
     // Sempre apresenta a potência em cv E kW (calcula a que faltar).
@@ -254,6 +255,8 @@ REGRAS DE SAÍDA (OBRIGATÓRIAS):
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (e) {
-    return new Response(JSON.stringify({ erro: String(e) }), { status: 500 });
+    // Erro interno fica só no log; ao cliente vai uma mensagem genérica.
+    console.error('[ler-placa] erro interno:', e);
+    return new Response(JSON.stringify({ erro: 'Falha ao processar a imagem. Tente novamente.' }), { status: 500 });
   }
 }
