@@ -4,12 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Motor Stock</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!-- Fontes auto-hospedadas (.woff2 locais) — app 100% autocontido, funciona offline. -->
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sharetechmono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1a2744">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <style>
+  /* ── FONTES LOCAIS (.woff2 em /fonts) — sem CDN em runtime, offline-real ──
+     Inter é variável (cobre 400–700 num arquivo). latin cobre PT-BR (ç, ã, õ, á…);
+     latin-ext entra só como segurança para caracteres latinos extras. */
+  @font-face {
+    font-family: 'Inter'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/fonts/inter-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Inter'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+  @font-face {
+    font-family: 'Share Tech Mono'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/fonts/sharetechmono-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+
   :root {
     /* acentos semânticos — iguais nos dois temas */
     --yellow:     #f5c518;
@@ -81,6 +102,18 @@
     border-radius: 3px;
   }
   button:focus-visible, .tab:focus-visible { outline-offset: 1px; }
+
+  /* ── MOVIMENTO REDUZIDO (acessibilidade) ──
+     Respeita quem pede menos animação no SO: encurta animações/transições
+     e desliga rolagem suave, sem quebrar o layout. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 
   /* ══ HEADER ══ */
   header {
@@ -332,6 +365,9 @@
   .np-carcaca { font-size: 16px; font-weight: 700; color: var(--white); letter-spacing: 0.05em; }
   .np-fabricante { font-size: 11px; color: var(--muted); font-family: 'Share Tech Mono', monospace; margin-top: 1px; }
   .np-actions { display: flex; gap: 6px; }
+  /* alvo de toque confortável nos botões de ação do card (operador com luva).
+     Antes ~21px de altura; agora 44px de área tocável, ícone segue pequeno. */
+  .np-actions .btn-sm { min-width: 44px; min-height: 44px; padding: 5px; }
   .np-panels { display: grid; grid-template-columns: 1fr 1fr; }
   .np-panel { padding: 10px 14px 12px; }
   .np-panel + .np-panel { border-left: 1px solid var(--navy-light); }

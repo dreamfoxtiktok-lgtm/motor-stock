@@ -1,11 +1,14 @@
-const CACHE_NAME = 'motor-stock-v10';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v11';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
   '/manifest.json',
   '/lib/chart.umd.min.js',
   '/lib/xlsx.full.min.js',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/fonts/inter-latin.woff2',
+  '/fonts/inter-latin-ext.woff2',
+  '/fonts/sharetechmono-latin.woff2'
 ];
 
 self.addEventListener('install', e => {
