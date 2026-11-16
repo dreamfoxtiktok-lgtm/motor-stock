@@ -8,7 +8,7 @@
   # Fontes agora são locais (/fonts/*.woff2) — font-src 'self', sem CDN de fontes.
   # A IA roda na Pages Function (servidor) — api.cloudflare.com NÃO precisa entrar aqui.
   # Se algo quebrar no console com erro de CSP, adicione o domínio exato (nunca use *).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:;
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:;
 
 # o service worker precisa ser servido sem cache agressivo pra o browser detectar updates
 /sw.js

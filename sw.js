@@ -1,4 +1,4 @@
-const CACHE_NAME = 'motor-stock-v15';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v16';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
   '/manifest.json',
@@ -8,7 +8,10 @@ const ASSETS = [
   '/icons/icon-512.png',
   '/fonts/inter-latin.woff2',
   '/fonts/inter-latin-ext.woff2',
-  '/fonts/sharetechmono-latin.woff2'
+  '/fonts/sharetechmono-latin.woff2',
+  '/vendor/firebase/firebase-app.js',
+  '/vendor/firebase/firebase-firestore.js',
+  '/vendor/firebase/firebase-auth.js'
 ];
 
 self.addEventListener('install', e => {
