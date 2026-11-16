@@ -2227,7 +2227,10 @@
       const data = await r.json().catch(() => ({}));
       if (r.ok && data.ok) {
         sessionStorage.setItem('ms_auth', '1');
-        await window.FB.signIn();            // login anônimo no Firebase (libera as Security Rules)
+        // Blindagem: entra com o custom token (claim 'equipe'). Enquanto o secret
+        // não estiver configurado, a Function não manda token e cai no anônimo.
+        if (data.token) await window.FB.signInToken(data.token);
+        else await window.FB.signIn();
         liberarApp();
       } else if (r.status === 429 || data.bloqueado) {
         const min = Math.max(1, Math.ceil((data.retryEm || 600) / 60));
@@ -2270,7 +2273,7 @@
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField, enableNetwork
   } from '/vendor/firebase/firebase-firestore.js';
-  import { getAuth, signInAnonymously, onAuthStateChanged }
+  import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged }
     from '/vendor/firebase/firebase-auth.js';
 
   /* ⚠️⚠️⚠️  VOCÊ FAZ (Passo 3.1):  cole aqui o firebaseConfig do SEU projeto.
@@ -2370,14 +2373,12 @@
       async remove(id)       { await deleteDoc(doc(db, 'motores', id)); }
     };
 
-    // Garante conexão com a nuvem SOB DEMANDA: (re)faz o login anônimo e espera
-    // o modo nuvem assumir (até ~8s). Usado pelo botão Salvar para não travar o
-    // cadastro quando a auth ainda não completou (comum no PWA, onde a sessão
-    // reseta a cada abertura). Retorna true se ficou em modo nuvem.
+    // Garante modo nuvem SOB DEMANDA: espera a sessão restaurar/assumir (até ~8s).
+    // Com custom token, a sessão é persistida pelo Firebase e restaurada sozinha;
+    // não forçamos mais login anônimo aqui (que, após a blindagem, não teria a
+    // claim 'equipe' e seria bloqueado nas regras).
     async function ensureCloud() {
       if (window.Store && window.Store.mode === 'cloud') return true;
-      try { if (!auth.currentUser) await signInAnonymously(auth); }
-      catch (e) { console.error('[Auth] ensureCloud — login falhou:', e); }
       const t0 = Date.now();
       while (!(window.Store && window.Store.mode === 'cloud') && Date.now() - t0 < 8000) {
         await new Promise(r => setTimeout(r, 200));
@@ -2385,18 +2386,39 @@
       return !!(window.Store && window.Store.mode === 'cloud');
     }
 
-    window.FB = { configured: true, signIn: () => signInAnonymously(auth), ensureCloud };
+    window.FB = {
+      configured: true,
+      // login com CUSTOM TOKEN emitido pela Function a quem acerta a senha
+      signInToken: (t) => signInWithCustomToken(auth, t),
+      // fallback: login anônimo — usado SÓ enquanto o secret FB_SERVICE_ACCOUNT
+      // não estiver configurado (transição sem quebrar nada)
+      signIn: () => signInAnonymously(auth),
+      ensureCloud
+    };
 
-    // ao autenticar (anônimo), assume o Store da nuvem e liga o tempo real
+    // ao autenticar, assume o Store da nuvem, liga o tempo real e libera a tela
     onAuthStateChanged(auth, user => {
-      if (user) { window.Store = FirebaseStore; FirebaseStore.start(); }
+      if (user) {
+        window.Store = FirebaseStore;
+        FirebaseStore.start();
+        try { sessionStorage.setItem('ms_auth', '1'); } catch {}
+        const ov = document.getElementById('lockOverlay');
+        if (ov) ov.style.display = 'none';
+      }
     });
 
-    // tela de senha (gate). Se já logou nesta sessão, reautentica e libera direto.
+    // tela de senha (gate). A sessão do Firebase é persistida e restaurada sozinha
+    // (sem login anônimo automático). Se já entrou antes, esconde de forma otimista
+    // e, se a sessão não voltar em 5s, pede a senha de novo.
     const overlay = document.getElementById('lockOverlay');
     if (sessionStorage.getItem('ms_auth') === '1') {
-      signInAnonymously(auth).catch(e => console.error('[Auth]', e));
       if (overlay) overlay.style.display = 'none';
+      setTimeout(() => {
+        if (!auth.currentUser && overlay) {
+          overlay.style.display = 'flex';
+          document.getElementById('lockPass')?.focus();
+        }
+      }, 5000);
     } else if (overlay) {
       overlay.style.display = 'flex';
       setTimeout(() => document.getElementById('lockPass')?.focus(), 100);

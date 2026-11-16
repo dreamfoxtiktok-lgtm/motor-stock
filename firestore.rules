@@ -52,11 +52,18 @@ service cloud.firestore {
         && (!('createdTS'  in d) || d.createdTS is number);
     }
 
+    // BLINDAGEM: exige a claim 'equipe' (só quem acerta a senha e recebe o custom
+    // token da Function tem essa claim). Login anônimo direto (com a config pública)
+    // NÃO tem a claim → não lê nem escreve. Assim a senha protege os DADOS.
+    // ⚠ PUBLICAR estas regras só DEPOIS de: (1) secret FB_SERVICE_ACCOUNT no Cloudflare,
+    // (2) deploy do app novo, (3) teste de login OK. Antes disso, manter a regra antiga.
+    function daEquipe() { return request.auth != null && request.auth.token.equipe == true; }
+
     match /motores/{doc} {
-      allow read:   if request.auth != null;
-      allow create: if request.auth != null && motorValido(request.resource.data);
-      allow update: if request.auth != null && motorValido(request.resource.data);
-      allow delete: if request.auth != null;
+      allow read:   if daEquipe();
+      allow create: if daEquipe() && motorValido(request.resource.data);
+      allow update: if daEquipe() && motorValido(request.resource.data);
+      allow delete: if daEquipe();
     }
 
     // nega tudo que não casar acima
