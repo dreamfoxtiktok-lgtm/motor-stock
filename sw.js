@@ -1,4 +1,4 @@
-const CACHE_NAME = 'motor-stock-v12';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v13';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
   '/manifest.json',
@@ -12,17 +12,20 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+  // Instalação TOLERANTE: um arquivo que falhe (404/rede) não derruba o SW
+  // inteiro (addAll é atômico; allSettled cacheia o que der certo).
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(c => Promise.allSettled(ASSETS.map(u => c.add(u))))
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
@@ -36,6 +39,20 @@ self.addEventListener('fetch', e => {
       request.url.includes('googleapis.com')) {
     return; // deixa passar direto pra rede
   }
+
+  // NAVEGAÇÃO (abrir o app — inclusive o PWA INSTALADO): tenta a rede para
+  // pegar a versão mais nova; se a rede falhar (offline/instável), entrega a
+  // tela inicial em cache. Isso evita o erro "Não é possível acessar esse site"
+  // quando o app instalado é aberto sem rede ou com conexão instável.
+  if (request.mode === 'navigate') {
+    e.respondWith(
+      fetch(request).catch(() =>
+        caches.match('/index.html').then(r => r || caches.match(request))
+      )
+    );
+    return;
+  }
+
   // demais recursos: cache primeiro, rede como fallback
   e.respondWith(caches.match(request).then(r => r || fetch(request)));
 });
