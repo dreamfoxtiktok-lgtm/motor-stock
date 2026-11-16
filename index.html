@@ -2273,7 +2273,7 @@
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField, enableNetwork
   } from '/vendor/firebase/firebase-firestore.js';
-  import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged }
+  import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged }
     from '/vendor/firebase/firebase-auth.js';
 
   /* ⚠️⚠️⚠️  VOCÊ FAZ (Passo 3.1):  cole aqui o firebaseConfig do SEU projeto.
@@ -2337,8 +2337,21 @@
           try { localStorage.setItem('motors_stock', JSON.stringify(window.motors)); } catch {}
           onMotorsChanged();                             // re-render em tempo real
         }, err => {
-          // o onSnapshot é encerrado após um erro; reautentica e re-assina com backoff
-          console.error('[Firestore] onSnapshot caiu — reconectando:', (err && err.code) || err);
+          const code = (err && err.code) || '';
+          console.error('[Firestore] onSnapshot caiu:', code || err);
+          // Sessão sem a claim 'equipe' (ex.: sessão anônima antiga após a blindagem).
+          // Não adianta reconectar: desloga e pede a senha de novo.
+          if (code === 'permission-denied') {
+            try { signOut(auth); } catch {}
+            try { sessionStorage.removeItem('ms_auth'); } catch {}
+            if (this._unsub) { try { this._unsub(); } catch {} this._unsub = null; }
+            const ov = document.getElementById('lockOverlay');
+            if (ov) ov.style.display = 'flex';
+            if (window.flash) window.flash('🔒 Entre novamente com a senha da equipe.');
+            setTimeout(() => document.getElementById('lockPass')?.focus(), 100);
+            return;
+          }
+          // demais erros (rede/timeout): reautentica e re-assina com backoff
           this._scheduleResubscribe(2000);
         });
       },
@@ -2404,13 +2417,6 @@
         try { sessionStorage.setItem('ms_auth', '1'); } catch {}
         const ov = document.getElementById('lockOverlay');
         if (ov) ov.style.display = 'none';
-        // DIAGNÓSTICO TEMPORÁRIO: confirma se a sessão tem a claim 'equipe'
-        // (remover depois de validar a blindagem).
-        user.getIdTokenResult(true).then(res => {
-          const eq = !!(res.claims && res.claims.equipe === true);
-          console.log('[Auth] claim equipe:', eq, '| anônimo:', user.isAnonymous);
-          if (window.flash) window.flash(eq ? '🔒 Login protegido (equipe) ✓' : '⚠ Login ainda SEM proteção (anônimo/fallback)');
-        }).catch(e => console.error('[Auth] checagem de claim falhou:', e));
       }
     });
 
