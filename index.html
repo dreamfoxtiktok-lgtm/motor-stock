@@ -1815,28 +1815,27 @@
   /* ══════════════════════════════════════════
      SALVAR MOTOR
   ══════════════════════════════════════════ */
-  async function saveMotor() {
-    // ── PROTEÇÃO ANTI-PERDA (opção 1) ──────────────────────────────────────
-    // Quando o Firebase está configurado (uso real com nuvem), só deixa salvar
-    // se o app já estiver no modo NUVEM. Isso impede que um cadastro caia só no
-    // localStorage e seja apagado na próxima sincronização com a nuvem (foi o
-    // que aconteceu com o motor cadastrado logo após a migração).
-    // Só libera gravação local quando o Firebase NÃO está configurado
-    // (FB.configured === false, modo de desenvolvimento/offline proposital).
-    const fbConfigurado = window.FB ? window.FB.configured : null; // null = módulo ainda não carregou
-    let emNuvem = !!(window.Store && window.Store.mode === 'cloud');
-    if (fbConfigurado !== false && !emNuvem) {
-      // Não bloqueia de cara: tenta reconectar à nuvem agora e, se conseguir,
-      // segue o cadastro. Só avisa se realmente não houver conexão.
-      flash('⏳ Conectando à nuvem…');
-      if (window.FB && typeof window.FB.ensureCloud === 'function') {
-        try { emNuvem = await window.FB.ensureCloud(); } catch { emNuvem = false; }
-      }
-      if (!emNuvem) {
-        flash('⚠ Sem conexão com a nuvem. Verifique a internet e salve de novo.');
-        return;
-      }
+  // ── GUARD DE NUVEM (anti-perda) ─────────────────────────────────────────
+  // Exige modo NUVEM antes de QUALQUER gravação (cadastro, movimentação,
+  // exclusão). Sem isso, a operação cairia só no localStorage e "voltaria"
+  // quando a nuvem sincronizasse — era por isso que exclusões reapareciam.
+  // Não bloqueia de cara: tenta conectar agora; só avisa se não houver internet.
+  // Em modo dev (FB.configured === false) libera a gravação local.
+  async function garantirNuvem() {
+    const fbConfigurado = window.FB ? window.FB.configured : null;
+    if (fbConfigurado === false) return true;                       // dev/local proposital
+    if (window.Store && window.Store.mode === 'cloud') return true; // já conectado
+    flash('⏳ Conectando à nuvem…');
+    let ok = false;
+    if (window.FB && typeof window.FB.ensureCloud === 'function') {
+      try { ok = await window.FB.ensureCloud(); } catch { ok = false; }
     }
+    if (!ok) flash('⚠ Sem conexão com a nuvem. Verifique a internet e tente de novo.');
+    return ok;
+  }
+
+  async function saveMotor() {
+    if (!(await garantirNuvem())) return;
 
     const carcaca = document.getElementById('f_carcaca').value.trim();
     if (!carcaca){flash('⚠ Informe a Carcaça');return;}
@@ -1992,6 +1991,7 @@
   async function moverMotor(id, novoStatus, local) {
     const m = motors.find(x => x.id === id);
     if (!m) return;
+    if (!(await garantirNuvem())) return;   // movimentação só em modo nuvem (senão reverte ao sincronizar)
     const acaoMap = { uso:'Retirado para uso', conserto:'Enviado para conserto', estoque:'Retornado ao estoque' };
     const hist = Array.isArray(m.historico) ? m.historico.slice() : [];
     const entry = { acao: acaoMap[novoStatus] || 'Movimentação', data: hojeBR() };
@@ -2162,10 +2162,19 @@
     document.getElementById('overlay').classList.add('open');
   }
   function closeModal() { document.getElementById('overlay').classList.remove('open'); deleteTarget=null; }
-  function confirmDelete() {
-    Store.remove(deleteTarget);
-    if (editingId===deleteTarget) { editingId=null; setFormMode(false); clearForm(); }
-    closeModal(); flash('Motor removido');
+  async function confirmDelete() {
+    const alvo = deleteTarget;
+    closeModal();
+    if (!alvo) return;
+    if (!(await garantirNuvem())) return;   // não apaga em modo local (voltaria ao sincronizar)
+    try {
+      await Store.remove(alvo);             // aguarda o Firestore confirmar a exclusão
+      if (editingId===alvo) { editingId=null; setFormMode(false); clearForm(); }
+      flash('✓ Motor removido');
+    } catch (e) {
+      console.error('[confirmDelete] falha ao remover:', e);
+      flash('✗ Não foi possível remover: ' + ((e && e.code) || (e && e.message) || e));
+    }
   }
   function clearForm() {
     ['f_tag','f_carcaca','f_fabricante','f_potencia','f_amp','f_fs','f_rpm','f_eixo','f_obs','f_endereco']
