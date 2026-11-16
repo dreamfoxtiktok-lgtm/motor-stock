@@ -2404,6 +2404,13 @@
         try { sessionStorage.setItem('ms_auth', '1'); } catch {}
         const ov = document.getElementById('lockOverlay');
         if (ov) ov.style.display = 'none';
+        // DIAGNÓSTICO TEMPORÁRIO: confirma se a sessão tem a claim 'equipe'
+        // (remover depois de validar a blindagem).
+        user.getIdTokenResult(true).then(res => {
+          const eq = !!(res.claims && res.claims.equipe === true);
+          console.log('[Auth] claim equipe:', eq, '| anônimo:', user.isAnonymous);
+          if (window.flash) window.flash(eq ? '🔒 Login protegido (equipe) ✓' : '⚠ Login ainda SEM proteção (anônimo/fallback)');
+        }).catch(e => console.error('[Auth] checagem de claim falhou:', e));
       }
     });
 
