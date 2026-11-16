@@ -487,9 +487,29 @@
     font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: .06em; color: var(--muted); margin-bottom: 12px;
   }
+  /* wrapper com altura controlada: o Chart.js preenche o container pai
+     (maintainAspectRatio:false) de forma confiável — setar altura direto no
+     <canvas> não funciona, o Chart.js atropela. A altura é definida em JS. */
+  .chart-box { position: relative; width: 100%; height: 220px; }
+  .chart-box canvas { display: block; }
   .dash-empty {
     padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px;
   }
+
+  /* barra de filtro do dashboard (drill-down) */
+  .dash-filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .dash-filter-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(79,163,224,.14); border: 1px solid rgba(79,163,224,.45);
+    color: var(--elec); font-size: 12px; font-weight: 600; padding: 4px 6px 4px 11px; border-radius: 16px;
+  }
+  .dash-filter-pill button {
+    background: rgba(79,163,224,.25); border: none; color: var(--elec); cursor: pointer;
+    width: 18px; height: 18px; border-radius: 50%; font-size: 12px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .dash-filter-pill button:hover { background: rgba(79,163,224,.45); }
+  .dash-filter-hint { font-size: 11px; color: var(--muted); }
 
   @media (max-width: 500px) {
     .kpi-row { grid-template-columns: 1fr 1fr; }
@@ -851,27 +871,30 @@
     <!-- KPIs -->
     <div class="kpi-row" id="kpiRow"></div>
 
+    <!-- Barra de filtro do dashboard (drill-down por clique) -->
+    <div id="dashFilterBar" class="dash-filter-bar"></div>
+
     <!-- Gráficos -->
     <div class="dash-grid">
       <div class="dash-card">
         <div class="dash-card-title">Status do Estoque</div>
-        <canvas id="chartStatus"></canvas>
+        <div class="chart-box" id="boxStatus"><canvas id="chartStatus"></canvas></div>
       </div>
       <div class="dash-card">
         <div class="dash-card-title">Motores por Carcaça</div>
-        <canvas id="chartCarcaca"></canvas>
+        <div class="chart-box" id="boxCarcaca"><canvas id="chartCarcaca"></canvas></div>
       </div>
       <div class="dash-card dash-card-wide">
         <div class="dash-card-title">Motores por Potência</div>
-        <canvas id="chartPotVal"></canvas>
+        <div class="chart-box" id="boxPotVal"><canvas id="chartPotVal"></canvas></div>
       </div>
       <div class="dash-card dash-card-wide">
         <div class="dash-card-title">Movimentações por Mês (saídas × retornos)</div>
-        <canvas id="chartMov"></canvas>
+        <div class="chart-box" id="boxMov"><canvas id="chartMov"></canvas></div>
       </div>
       <div class="dash-card dash-card-wide">
         <div class="dash-card-title">Motores mais movimentados</div>
-        <canvas id="chartMaisMov"></canvas>
+        <div class="chart-box" id="boxMaisMov"><canvas id="chartMaisMov"></canvas></div>
       </div>
     </div>
 
@@ -1039,21 +1062,81 @@
     if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
   }
 
+  // ── FILTRO DO DASHBOARD (drill-down por clique) ──────────────────────────
+  // dashFilter = null | { dim:'status'|'carcaca'|'potencia', value, label }
+  let dashFilter = null;
+
+  // chave de potência em cv usada tanto no gráfico quanto no filtro (mesma regra)
+  function potKey(m) {
+    const v = parsePot(m.potencia);
+    return v > 0 ? ((Number.isInteger(v) ? String(v) : String(v).replace('.', ',')) + ' cv') : 'N/D';
+  }
+
+  function matchesDashFilter(m) {
+    if (!dashFilter) return true;
+    if (dashFilter.dim === 'status')   return statusInfo(m).key === dashFilter.value;
+    if (dashFilter.dim === 'carcaca')  return (m.carcaca || 'N/D') === dashFilter.value;
+    if (dashFilter.dim === 'potencia') return potKey(m) === dashFilter.value;
+    return true;
+  }
+
+  // clicou numa barra/fatia: aplica o filtro; clicou de novo no mesmo = limpa
+  function setDashFilter(dim, value, label) {
+    if (dashFilter && dashFilter.dim === dim && dashFilter.value === value) dashFilter = null;
+    else dashFilter = { dim, value, label };
+    renderDashboard();
+  }
+  function clearDashFilter() { dashFilter = null; renderDashboard(); }
+
+  // cursor de "mãozinha" ao passar sobre um elemento clicável
+  function chartHover(evt, els) {
+    if (evt && evt.native && evt.native.target)
+      evt.native.target.style.cursor = els.length ? 'pointer' : 'default';
+  }
+
+  // garante que o <canvas> exista dentro do box (o estado vazio troca por mensagem)
+  function ensureCanvas(boxId, canvasId) {
+    const box = document.getElementById(boxId);
+    if (box && !document.getElementById(canvasId)) box.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+    return box;
+  }
+
   function renderDashboard() {
     if (!motors.length) {
+      ['status','car','potval','mov','maismov'].forEach(destroyChart);
+      dashFilter = null;
+      const fb0 = document.getElementById('dashFilterBar'); if (fb0) fb0.innerHTML = '';
       document.getElementById('kpiRow').innerHTML =
         '<div class="dash-empty" style="grid-column:1/-1">Nenhum motor cadastrado ainda.</div>';
-      ['chartStatus','chartCarcaca','chartPotVal','chartMov']
-        .forEach(id => { const c=document.getElementById(id); if(c) c.parentElement.innerHTML=`<div class="dash-card-title">${c.parentElement.querySelector('.dash-card-title').textContent}</div><div class="dash-empty">Sem dados</div>`; });
+      [['boxStatus'],['boxCarcaca'],['boxPotVal'],['boxMov'],['boxMaisMov']]
+        .forEach(([id]) => { const b=document.getElementById(id); if(b){ b.style.height='auto'; b.innerHTML='<div class="dash-empty">Sem dados</div>'; } });
       return;
     }
 
-    // ── KPIs (foco em manutenção/disponibilidade) ──
+    // ── KPIs (foco em manutenção/disponibilidade) — sempre sobre o TOTAL ──
     const totalMotores = motors.length;
     const nEstoque  = motors.filter(m => statusInfo(m).key === 'estoque').length;
     const nUso      = motors.filter(m => statusInfo(m).key === 'uso').length;
     const nConserto = motors.filter(m => statusInfo(m).key === 'conserto').length;
     const taxaDisp  = totalMotores ? Math.round((nEstoque / totalMotores) * 100) : 0;
+
+    // ── Subconjunto filtrado (drill-down) — alimenta TODOS os gráficos ──
+    const base = motors.filter(matchesDashFilter);
+    // garante os canvases (podem ter sido trocados por "Sem dados" antes)
+    ensureCanvas('boxStatus','chartStatus'); ensureCanvas('boxCarcaca','chartCarcaca');
+    ensureCanvas('boxPotVal','chartPotVal'); ensureCanvas('boxMov','chartMov');
+    ensureCanvas('boxMaisMov','chartMaisMov');
+    // pílula de filtro + dica
+    const fb = document.getElementById('dashFilterBar');
+    if (fb) {
+      if (dashFilter) {
+        fb.innerHTML = `<span class="dash-filter-pill">${escapeHtml(dashFilter.label)}`
+          + ` <button onclick="clearDashFilter()" title="Limpar filtro" aria-label="Limpar filtro">✕</button></span>`
+          + `<span class="dash-filter-hint">${base.length} motor${base.length!==1?'es':''} • clique em outra barra para trocar</span>`;
+      } else {
+        fb.innerHTML = `<span class="dash-filter-hint">💡 Clique numa barra (Status, Carcaça ou Potência) para filtrar os gráficos.</span>`;
+      }
+    }
 
     document.getElementById('kpiRow').innerHTML = `
       <div class="kpi kpi-mec">
@@ -1094,13 +1177,14 @@
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
 
-    // ── GRÁFICO 1: Status do Estoque (rosca) ──
+    // ── GRÁFICO 1: Status do Estoque (rosca) — clicável (filtra por status) ──
     destroyChart('status');
     const statusData = [
-      { label:'Em estoque',  val:nEstoque,  color:'#2ecc7a' },
-      { label:'Em uso',      val:nUso,      color:'#f5c518' },
-      { label:'Em conserto', val:nConserto, color:'#e05252' },
+      { key:'estoque',  label:'Em estoque',  val: base.filter(m=>statusInfo(m).key==='estoque').length,  color:'#2ecc7a' },
+      { key:'uso',      label:'Em uso',      val: base.filter(m=>statusInfo(m).key==='uso').length,      color:'#f5c518' },
+      { key:'conserto', label:'Em conserto', val: base.filter(m=>statusInfo(m).key==='conserto').length, color:'#e05252' },
     ];
+    document.getElementById('boxStatus').style.height = '230px';
     _charts['status'] = new Chart(document.getElementById('chartStatus'), {
       type: 'doughnut',
       data: {
@@ -1109,23 +1193,23 @@
       },
       options: {
         plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:12, font:{size:11} } } },
-        responsive:true, maintainAspectRatio:true, cutout:'62%'
+        responsive:true, maintainAspectRatio:false, cutout:'62%',
+        onHover: chartHover,
+        onClick: (evt, els) => { if (els.length) { const s = statusData[els[0].index]; setDashFilter('status', s.key, 'Status: ' + s.label); } }
       }
     });
 
-    // ── GRÁFICO 2: Motores por Potência (contagem por valor em cv) ──
+    // ── GRÁFICO 2: Motores por Potência (contagem por valor em cv) — clicável ──
     destroyChart('potval');
     const potValCount = {};
-    motors.forEach(m => {
-      const v = parsePot(m.potencia);
-      const key = v > 0 ? ((Number.isInteger(v) ? String(v) : String(v).replace('.', ',')) + ' cv') : 'N/D';
-      potValCount[key] = (potValCount[key] || 0) + 1;
-    });
+    base.forEach(m => { const k = potKey(m); potValCount[k] = (potValCount[k] || 0) + 1; });
     // ordena por valor numérico crescente (N/D por último)
     const potValSorted = Object.entries(potValCount).sort((a,b) => {
       const na = parseFloat(a[0].replace(',', '.')), nb = parseFloat(b[0].replace(',', '.'));
       return (isNaN(na)?Infinity:na) - (isNaN(nb)?Infinity:nb);
     });
+    // altura no WRAPPER (não no canvas): proporcional ao nº de faixas, confiável
+    document.getElementById('boxPotVal').style.height = Math.max(140, potValSorted.length * 36 + 40) + 'px';
     _charts['potval'] = new Chart(document.getElementById('chartPotVal'), {
       type: 'bar',
       data: {
@@ -1136,18 +1220,18 @@
         indexAxis:'y',                       // barras horizontais → rótulos legíveis
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.parsed.x} motor${c.parsed.x!==1?'es':''}` } } },
         scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1, precision:0}, beginAtZero:true}, y:{grid:{display:false}} },
-        responsive:true, maintainAspectRatio:false
+        responsive:true, maintainAspectRatio:false,
+        onHover: chartHover,
+        onClick: (evt, els) => { if (els.length) { const k = potValSorted[els[0].index][0]; setDashFilter('potencia', k, 'Potência: ' + k); } }
       }
     });
-    // altura proporcional à quantidade de faixas (evita barras esmagadas/desproporcionais)
-    const pvCanvas = document.getElementById('chartPotVal');
-    if (pvCanvas) pvCanvas.style.height = Math.max(140, potValSorted.length * 34 + 20) + 'px';
 
-    // ── GRÁFICO 3: por Carcaça ──
+    // ── GRÁFICO 3: por Carcaça — clicável (filtra por carcaça) ──
     destroyChart('car');
     const carCount = {};
-    motors.forEach(m => { const c=m.carcaca||'N/D'; carCount[c]=(carCount[c]||0)+1; });
+    base.forEach(m => { const c=m.carcaca||'N/D'; carCount[c]=(carCount[c]||0)+1; });
     const carSorted = Object.entries(carCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    document.getElementById('boxCarcaca').style.height = Math.max(140, carSorted.length * 36 + 40) + 'px';
     _charts['car'] = new Chart(document.getElementById('chartCarcaca'), {
       type: 'bar',
       data: {
@@ -1156,9 +1240,11 @@
       },
       options: {
         indexAxis:'y',
-        plugins:{ legend:{display:false} },
-        scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1}}, y:{grid:{display:false}} },
-        responsive:true, maintainAspectRatio:true
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.parsed.x} motor${c.parsed.x!==1?'es':''}` } } },
+        scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1, precision:0}, beginAtZero:true}, y:{grid:{display:false}} },
+        responsive:true, maintainAspectRatio:false,
+        onHover: chartHover,
+        onClick: (evt, els) => { if (els.length) { const k = carSorted[els[0].index][0]; setDashFilter('carcaca', k, 'Carcaça: ' + k); } }
       }
     });
 
@@ -1167,7 +1253,7 @@
     destroyChart('mov');
     const saidas = {}, retornos = {};
     const mesKey = d => { const p=(d||'').split('/'); return p.length===3 ? p[1]+'/'+p[2] : null; };
-    motors.forEach(m => {
+    base.forEach(m => {
       (Array.isArray(m.historico) ? m.historico : []).forEach(h => {
         const k = mesKey(h.data); if (!k) return;
         if (h.acao === 'Retirado para uso' || h.acao === 'Enviado para conserto') saidas[k]=(saidas[k]||0)+1;
@@ -1175,6 +1261,7 @@
       });
     });
     const movMeses = [...new Set([...Object.keys(saidas), ...Object.keys(retornos)])].sort((a,b)=>a.localeCompare(b));
+    document.getElementById('boxMov').style.height = '220px';
     _charts['mov'] = new Chart(document.getElementById('chartMov'), {
       type: 'bar',
       data: {
@@ -1190,13 +1277,12 @@
         responsive:true, maintainAspectRatio:false
       }
     });
-    const movCanvas = document.getElementById('chartMov'); if (movCanvas) movCanvas.style.height = '200px';
 
     // ── GRÁFICO 5: Motores mais movimentados (ranking por nº de movimentações) ──
     // Conta as entradas do histórico que representam movimentação de verdade
     // (exclui o "Cadastrado"). Mostra o top 8, barras horizontais.
     destroyChart('maismov');
-    const maisMov = motors.map(m => {
+    const maisMov = base.map(m => {
       const h = Array.isArray(m.historico) ? m.historico : [];
       const n = h.filter(x => x && x.acao && x.acao !== 'Cadastrado').length;
       const rotulo = (m.tag && m.tag.trim()) ? m.tag : ('Carc. ' + (m.carcaca || '?'));
@@ -1216,8 +1302,7 @@
         responsive:true, maintainAspectRatio:false
       }
     });
-    const mmCanvas = document.getElementById('chartMaisMov');
-    if (mmCanvas) mmCanvas.style.height = Math.max(140, maisMov.length * 34 + 20) + 'px';
+    document.getElementById('boxMaisMov').style.height = Math.max(140, maisMov.length * 36 + 40) + 'px';
   }
 
   // extrai valor numérico de potência em cv
