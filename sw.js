@@ -1,4 +1,4 @@
-const CACHE_NAME = 'motor-stock-v14';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v15';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
   '/manifest.json',
@@ -34,6 +34,7 @@ self.addEventListener('fetch', e => {
   if (request.method !== 'GET') return;
   // NÃO cachear chamadas às Functions nem ao Firebase — sempre rede
   if (request.url.includes('/api/') ||
+      request.url.includes('gstatic.com') ||          // SDK do Firebase: vai DIRETO à rede (o SW interceptando causava 503)
       request.url.includes('firestore.googleapis.com') ||
       request.url.includes('firebaseio.com') ||
       request.url.includes('googleapis.com')) {
