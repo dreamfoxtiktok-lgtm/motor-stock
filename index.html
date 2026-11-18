@@ -748,7 +748,7 @@
       <div class="fcard-title"><div class="stripe stripe-id"></div><span>Identificação</span></div>
       <div class="fcard-body">
         <div class="form-row">
-          <div class="fg"><label>Nº de Tag</label><input type="text" id="f_tag" placeholder="ex: MOT-001" autocomplete="off"></div>
+          <div class="fg"><label>Nº de Tag *</label><input type="text" id="f_tag" placeholder="ex: MOT-001" autocomplete="off"></div>
           <div class="fg"><label>Carcaça</label><input type="text" id="f_carcaca" placeholder="ex: 132M" autocomplete="off"></div>
         </div>
         <div class="form-row single">
@@ -1844,12 +1844,12 @@
 
     const tag = document.getElementById('f_tag').value.trim().toUpperCase();
 
-    // checa tag duplicada (ignora o próprio motor em edição)
-    if (tag) {
-      const dup = motors.find(m => (m.tag||'').toUpperCase() === tag && m.id !== editingId);
-      if (dup) {
-        if (!confirm(`Já existe um motor com a tag "${tag}" (carcaça ${dup.carcaca}).\n\nDeseja cadastrar mesmo assim?`)) return;
-      }
+    // tag é obrigatória e única (ignora o próprio motor em edição)
+    if (!tag) { flash('⚠ Informe o Nº de Tag — sem tag não é possível cadastrar'); return; }
+    const dup = motors.find(m => (m.tag||'').trim().toUpperCase() === tag && m.id !== editingId);
+    if (dup) {
+      flash(`⛔ Tag "${tag}" já cadastrada (carcaça ${dup.carcaca}). Use outra tag.`);
+      return;
     }
 
     const rpm = document.getElementById('f_rpm').value.trim();
