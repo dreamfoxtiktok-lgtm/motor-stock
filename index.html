@@ -1146,8 +1146,13 @@
   // dashFilter = null | { dim:'status'|'carcaca'|'potencia', value, label }
   let dashFilter = null;
 
-  // valores comerciais de cv (mesma tabela da lista suspensa de potência)
-  const CV_PADRAO = [0.16,0.25,0.33,0.5,0.75,1,1.5,2,3,4,5,6,7.5,10,12.5,15,20,25];
+  // tabela comercial cv → kW (mesma da lista suspensa de potência)
+  const KW_POR_CV = {0.16:0.12, 0.25:0.18, 0.33:0.25, 0.5:0.37, 0.75:0.55, 1:0.75,
+                     1.5:1.1, 2:1.5, 3:2.2, 4:3, 5:3.7, 6:4.5, 7.5:5.5, 10:7.5,
+                     12.5:9.2, 15:11, 20:15, 25:18.5};
+  const CV_PADRAO = Object.keys(KW_POR_CV).map(Number);
+  // número → texto BR (vírgula decimal, sem zeros à toa)
+  const numBR = n => Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
   // encaixa a cv lida no valor comercial mais próximo (dentro de ~8%); se não
   // houver padrão perto, arredonda a 2 casas. Evita rótulos quebrados tipo
   // "5,030591434 cv" (de conversões kW→cv) e agrupa motores iguais sob a
@@ -1158,12 +1163,14 @@
     return bd <= 0.08 ? best : Math.round(v * 100) / 100;
   }
 
-  // chave de potência em cv usada tanto no gráfico quanto no filtro (mesma regra)
+  // chave/rótulo de potência "cv / kW" usada no gráfico E no filtro (mesma regra).
+  // O kW vem da tabela comercial; fora dela, converte (1 cv = 0,7355 kW).
   function potKey(m) {
     const raw = parsePot(m.potencia);
     if (!(raw > 0)) return 'N/D';
-    const v = cvComercial(raw);
-    return (Number.isInteger(v) ? String(v) : String(v).replace('.', ',')) + ' cv';
+    const v  = cvComercial(raw);
+    const kw = (v in KW_POR_CV) ? KW_POR_CV[v] : Math.round(v * 0.7355 * 10) / 10;
+    return numBR(v) + ' cv / ' + numBR(kw) + ' kW';
   }
 
   function matchesDashFilter(m) {
