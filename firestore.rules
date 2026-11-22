@@ -21,6 +21,7 @@ service cloud.firestore {
                                'flange','flangeFuros','baseFixacao',
                                'status','localAtual','historico',
                                'testado','dataTeste','turnoTeste',
+                               'temFoto',
                                'createdAt','updatedAt','createdTS'])
         // obrigatórios
         && 'carcaca'  in d && d.carcaca  is string && d.carcaca.size()  >= 1 && d.carcaca.size()  <= 60
@@ -45,6 +46,7 @@ service cloud.firestore {
         && (!('historico'  in d) || (d.historico is list && d.historico.size() <= 500))
         // teste: testado (bool); dataTeste/turnoTeste (string) só quando testado = true
         && (!('testado'    in d) || d.testado is bool)
+        && (!('temFoto'    in d) || d.temFoto is bool)
         && (!('dataTeste'  in d) || (d.dataTeste  is string && d.dataTeste.size()  <= 20))
         && (!('turnoTeste' in d) || (d.turnoTeste is string && d.turnoTeste.size() <= 20))
         && (!('createdAt'  in d) || (d.createdAt  is string && d.createdAt.size()  <= 20))
@@ -83,6 +85,25 @@ service cloud.firestore {
       allow read:   if daEquipe();
       allow create: if daEquipe() && tagValida(request.resource.data);
       allow update: if false;        // nunca atualiza → recriar tag existente falha (unicidade)
+      allow delete: if daEquipe();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // FOTO DO MOTOR — 1 documento por motor (/fotos/{motorId}), guardado FORA do
+    // doc do motor pra não pesar a sincronização em tempo real da lista. A imagem
+    // vai como base64 (campo 'img'). O teto de ~1 MB respeita o limite de 1
+    // documento do Firestore; o app comprime pra ~700 KB antes de enviar.
+    // ─────────────────────────────────────────────────────────────
+    function fotoValida(d) {
+      return d.keys().hasOnly(['img','mime','updatedTS'])
+        && 'img'  in d && d.img  is string && d.img.size() >= 1 && d.img.size() <= 1000000
+        && (!('mime'      in d) || (d.mime is string && d.mime.size() <= 40))
+        && (!('updatedTS' in d) || d.updatedTS is number);
+    }
+    match /fotos/{motorId} {
+      allow read:   if daEquipe();
+      allow create: if daEquipe() && fotoValida(request.resource.data);
+      allow update: if daEquipe() && fotoValida(request.resource.data);
       allow delete: if daEquipe();
     }
 

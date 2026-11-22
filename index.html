@@ -565,6 +565,19 @@
   .update-banner span { flex: 1; line-height: 1.3; }
   .update-banner button { background: #fff; color: #1a2744; border: 0; font-weight: 800; font-size: 12.5px; padding: 7px 14px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
   .update-banner button:active { transform: scale(.96); }
+  /* Foto do motor — seção do formulário */
+  .motorfoto-row { display: flex; gap: 8px; }
+  .motorfoto-existente { display: flex; gap: 8px; margin-top: 10px; }
+  .motorfoto-preview { position: relative; margin-top: 10px; width: fit-content; }
+  .motorfoto-preview img { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid var(--navy-light); display: block; }
+  .motorfoto-hint { margin-top: 8px; font-size: 11px; color: var(--muted); }
+  /* Visualizador em tela cheia */
+  .foto-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1200; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .foto-overlay.open { display: flex; }
+  .foto-box { position: relative; max-width: 96vw; max-height: 92vh; display: flex; align-items: center; justify-content: center; }
+  .foto-box img { max-width: 96vw; max-height: 92vh; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .foto-close { position: absolute; top: -6px; right: -6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: #fff; color: #1a2744; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.4); z-index: 2; }
+  .foto-loading { color: #f0f4ff; font-size: 13px; font-weight: 600; padding: 24px; }
   .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
   .overlay.open { display: flex; }
   .modal { background: var(--navy); border: 1px solid var(--navy-light); border-radius: 10px; padding: 24px; max-width: 300px; width: 90%; text-align: center; }
@@ -647,6 +660,9 @@
 <!-- inputs ocultos -->
 <input type="file" id="inputFile"    accept="image/*">
 <input type="file" id="inputCapture" accept="image/*" capture="environment">
+<!-- inputs ocultos da FOTO DO MOTOR (separados da leitura de placa) -->
+<input type="file" id="inputMotorFile"    accept="image/*">
+<input type="file" id="inputMotorCapture" accept="image/*" capture="environment">
 
 <div class="main">
   <div class="tabs">
@@ -864,6 +880,36 @@
       </div>
     </div>
 
+    <!-- FOTO DO MOTOR (guardada na nuvem, carregada sob demanda) -->
+    <div class="fcard">
+      <div class="fcard-title"><div class="stripe" style="background:var(--ai)"></div><span>Foto do Motor</span></div>
+      <div class="fcard-body">
+        <div class="motorfoto-row">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inputMotorCapture').click()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Câmera
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inputMotorFile').click()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Galeria
+          </button>
+        </div>
+        <!-- preview da foto NOVA escolhida -->
+        <div class="motorfoto-preview" id="motorFotoPreviewWrap" style="display:none">
+          <img id="motorFotoImg" src="" alt="Foto do motor">
+          <button type="button" class="photo-clear" onclick="removerFotoMotor()" title="Remover foto">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <!-- motor em edição que JÁ tem foto (não baixa até pedir) -->
+        <div class="motorfoto-existente" id="motorFotoExistente" style="display:none">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="verFoto(editingId)">Ver foto atual</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="removerFotoMotor()">Remover foto</button>
+        </div>
+        <div class="motorfoto-hint" id="motorFotoHint">Opcional — guardada na nuvem, custo zero.</div>
+      </div>
+    </div>
+
     <div class="edit-banner" id="editBanner" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Modo edição — você está alterando um motor existente
@@ -964,6 +1010,16 @@
   <span>🔄 Nova versão disponível</span>
   <button id="updateBtn" onclick="aplicarAtualizacao()">Atualizar</button>
 </div>
+<!-- Visualizador da foto do motor (carrega sob demanda) -->
+<div class="foto-overlay" id="fotoOverlay" onclick="if(event.target===this)closeFoto()">
+  <div class="foto-box">
+    <button class="foto-close" onclick="closeFoto()" title="Fechar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="foto-loading" id="fotoLoading">Carregando foto…</div>
+    <img id="fotoFull" src="" alt="Foto do motor" style="display:none">
+  </div>
+</div>
 <div class="overlay" id="overlay">
   <div class="modal">
     <h3>Remover motor?</h3>
@@ -1022,6 +1078,13 @@
   let fotoBase64 = null;   // base64 da foto atual (sem prefixo data:)
   let fotoMime   = 'image/jpeg';
   let stream     = null;   // MediaStream da câmera
+
+  // ── FOTO DO MOTOR (guardada na nuvem, doc separado /fotos/{id}) ──
+  let motorFotoBase64   = null;        // base64 da foto NOVA a salvar
+  let motorFotoMime     = 'image/jpeg';
+  let motorFotoDirty    = false;       // usuário escolheu uma foto nova nesta sessão de form
+  let motorFotoRemovida = false;       // usuário removeu a foto existente (edição)
+  let editTemFoto       = false;       // o motor em edição já tinha foto?
 
   const hojeBR = () => new Date().toLocaleDateString('pt-BR');
   function mirrorLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(motors)); } catch {} }
@@ -1694,6 +1757,120 @@
   }
 
   /* ══════════════════════════════════════════
+     FOTO DO MOTOR — captura, compressão e visualização
+     Guardada em doc separado (/fotos/{id}) e baixada SÓ sob demanda, pra não
+     pesar a sincronização em tempo real da lista. Alvo mais enxuto que a foto
+     da placa: cabe no limite de 1 doc do Firestore (< 1 MB) e economiza cota.
+  ══════════════════════════════════════════ */
+  const FOTO_MOTOR_DIM   = 1024;               // maior lado, em px
+  const FOTO_MOTOR_Q     = 0.72;               // qualidade JPEG inicial
+  const FOTO_MOTOR_MAX   = 700 * 1024;         // teto do base64 (~700 KB, folga sob o limite de 1 MB do doc)
+
+  function comprimirFotoMotor(srcDataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, FOTO_MOTOR_DIM / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width  * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        let q = FOTO_MOTOR_Q;
+        let dataUrl = canvas.toDataURL('image/jpeg', q);
+        while (dataUrl.length > FOTO_MOTOR_MAX && q > 0.35) {
+          q -= 0.1;
+          dataUrl = canvas.toDataURL('image/jpeg', q);
+        }
+        resolve({ dataUrl, base64: dataUrl.split(',')[1], mime: 'image/jpeg' });
+      };
+      img.onerror = () => reject(new Error('Falha ao carregar a imagem'));
+      img.src = srcDataUrl;
+    });
+  }
+
+  function setupMotorFotoInput(inputId) {
+    document.getElementById(inputId).addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        comprimirFotoMotor(ev.target.result)
+          .then(out => aplicarFotoMotor(out))
+          .catch(() => flash('⚠ Erro ao processar a foto do motor'));
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+  }
+  setupMotorFotoInput('inputMotorFile');
+  setupMotorFotoInput('inputMotorCapture');
+
+  function aplicarFotoMotor(out) {
+    motorFotoBase64   = out.base64;
+    motorFotoMime     = out.mime;
+    motorFotoDirty    = true;
+    motorFotoRemovida = false;
+    document.getElementById('motorFotoImg').src = out.dataUrl;
+    document.getElementById('motorFotoPreviewWrap').style.display = '';
+    document.getElementById('motorFotoExistente').style.display = 'none';
+    document.getElementById('motorFotoHint').textContent = 'Nova foto pronta — será salva ao cadastrar/salvar.';
+  }
+
+  function removerFotoMotor() {
+    motorFotoBase64 = null;
+    motorFotoDirty  = false;
+    document.getElementById('motorFotoImg').src = '';
+    document.getElementById('motorFotoPreviewWrap').style.display = 'none';
+    document.getElementById('motorFotoExistente').style.display = 'none';
+    // editando um motor que TINHA foto → marca pra apagar na nuvem ao salvar
+    if (editingId && editTemFoto) {
+      motorFotoRemovida = true;
+      document.getElementById('motorFotoHint').textContent = '🗑 A foto será removida ao salvar.';
+    } else {
+      motorFotoRemovida = false;
+      document.getElementById('motorFotoHint').textContent = 'Opcional — guardada na nuvem, custo zero.';
+    }
+  }
+
+  // reseta todo o estado da foto do motor (usado no clearForm e ao abrir edição)
+  function resetFotoMotorUI() {
+    motorFotoBase64 = null; motorFotoDirty = false; motorFotoRemovida = false; editTemFoto = false;
+    document.getElementById('motorFotoImg').src = '';
+    document.getElementById('motorFotoPreviewWrap').style.display = 'none';
+    document.getElementById('motorFotoExistente').style.display = 'none';
+    document.getElementById('motorFotoHint').textContent = 'Opcional — guardada na nuvem, custo zero.';
+  }
+
+  // visualizador em tela cheia — baixa a foto do /fotos/{id} só agora
+  async function verFoto(id) {
+    if (!id) return;
+    const ov   = document.getElementById('fotoOverlay');
+    const img  = document.getElementById('fotoFull');
+    const load = document.getElementById('fotoLoading');
+    img.style.display = 'none'; img.src = ''; load.style.display = ''; load.textContent = 'Carregando foto…';
+    ov.classList.add('open');
+    try {
+      if (!(window.FB && window.FB.configured && typeof window.FB.getPhoto === 'function')) {
+        load.textContent = 'Foto disponível apenas no modo nuvem.'; return;
+      }
+      const f = await window.FB.getPhoto(id);
+      if (!f || !f.img) { load.textContent = 'Foto não encontrada.'; return; }
+      img.onload  = () => { load.style.display = 'none'; img.style.display = ''; };
+      img.onerror = () => { load.textContent = 'Falha ao exibir a foto.'; };
+      img.src = `data:${f.mime || 'image/jpeg'};base64,${f.img}`;
+    } catch (e) {
+      console.error('[verFoto]', e);
+      load.textContent = 'Erro ao carregar a foto.';
+    }
+  }
+  function closeFoto() {
+    document.getElementById('fotoOverlay').classList.remove('open');
+    const img = document.getElementById('fotoFull');
+    img.src = ''; img.style.display = 'none';
+  }
+
+  /* ══════════════════════════════════════════
      LEITURA COM IA — CLAUDE VISION
   ══════════════════════════════════════════ */
   async function lerPlacaComIA() {
@@ -1893,23 +2070,54 @@
       dados.turnoTeste = document.getElementById('f_turnoTeste').value || '';
     }
 
+    // ── FOTO DO MOTOR: estado final (nova / removida / mantida) ──
+    const cloudMode = !!(window.Store && window.Store.mode === 'cloud');
+    let temFotoFinal;
+    if (motorFotoDirty)         temFotoFinal = true;                       // escolheu foto nova
+    else if (motorFotoRemovida) temFotoFinal = false;                      // removeu a existente
+    else                        temFotoFinal = editingId ? editTemFoto : false;  // manteve como estava
+    dados.temFoto = cloudMode ? !!temFotoFinal : false;    // flag leve no doc (vai no onSnapshot)
+    // guarda os dados da foto ANTES de clearForm limpar o estado
+    const _fotoNova   = motorFotoDirty ? motorFotoBase64 : null;
+    const _fotoMime   = motorFotoMime;
+    const _fotoApagar = motorFotoRemovida;
+
     // trava o botão enquanto grava, pra não duplicar no clique duplo
     const btnSave = document.getElementById('btnSalvar');
     if (btnSave) btnSave.disabled = true;
 
+    const editingIdWas = editingId;
     try {
-      if (editingId) {
+      let alvoId;
+      if (editingIdWas) {
         // ── edição in-place: preserva id e data de criação ──
-        await Store.update(editingId, dados);   // AGUARDA de verdade: se o Firestore rejeitar, cai no catch
-        flash('✓ Motor atualizado');
+        await Store.update(editingIdWas, dados);   // AGUARDA de verdade: se o Firestore rejeitar, cai no catch
         editingId = null;
+        alvoId = editingIdWas;
       } else {
         // ── novo cadastro ── começa "Em estoque" + 1ª entrada no histórico
         dados.status = 'estoque';
         dados.historico = [{ acao: 'Cadastrado', data: hojeBR() }];
-        await Store.add(dados);                  // idem — só diz "cadastrado" se realmente salvou
-        flash('✓ Motor cadastrado');
+        alvoId = await Store.add(dados);           // devolve o id do novo doc (modo nuvem)
       }
+
+      // ── persiste a FOTO do motor (doc separado /fotos/{id}), só na nuvem ──
+      let fotoFalhou = false;
+      if (cloudMode && alvoId && window.FB) {
+        try {
+          if (_fotoNova && typeof window.FB.savePhoto === 'function') {
+            await window.FB.savePhoto(alvoId, _fotoNova, _fotoMime);
+          } else if (_fotoApagar && typeof window.FB.deletePhoto === 'function') {
+            await window.FB.deletePhoto(alvoId);
+          }
+        } catch (ef) {
+          console.error('[saveMotor] foto não salvou:', ef);
+          fotoFalhou = true;
+        }
+      }
+
+      if (fotoFalhou) flash('⚠ Motor salvo, mas a FOTO falhou. Edite o motor e tente a foto de novo.');
+      else            flash(editingIdWas ? '✓ Motor atualizado' : '✓ Motor cadastrado');
       clearForm();   // re-render + contagem são feitos pelo Store (onMotorsChanged)
     } catch (e) {
       // NÃO engole mais o erro: mostra o motivo real do Firestore e preserva o form
@@ -2108,6 +2316,9 @@
             ${si.key==='uso' && m.localAtual?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHtml(m.localAtual)}</div>`:''}
           </div>
           <div class="np-actions">
+            ${m.temFoto ? `<button class="btn btn-ghost btn-sm" onclick="verFoto('${m.id}')" title="Ver foto do motor">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>` : ''}
             <button class="btn btn-ghost btn-sm" onclick="editMotor('${m.id}')" title="Editar">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
@@ -2168,6 +2379,13 @@
     document.getElementById('f_dataTeste').value  = dtInput;
     document.getElementById('f_turnoTeste').value = (m.testado && m.turnoTeste) ? m.turnoTeste : '';
     toggleTestado(!!m.testado);
+    // foto do motor: NÃO baixa agora; só sinaliza que existe (ver / trocar / remover)
+    resetFotoMotorUI();
+    editTemFoto = !!m.temFoto;
+    if (editTemFoto) {
+      document.getElementById('motorFotoExistente').style.display = 'flex';
+      document.getElementById('motorFotoHint').textContent = '📷 Este motor já tem foto. Use Câmera/Galeria para trocar, ou remova.';
+    }
     editingId = id;                          // marca edição in-place
     setFormMode(true);
     switchTab('cadastro');
@@ -2211,6 +2429,7 @@
     editingId = null;
     setFormMode(false);
     limparFoto();
+    resetFotoMotorUI();
   }
   // alterna o rótulo do formulário entre "Cadastrar" e "Salvar edição"
   function setFormMode(editing) {
@@ -2482,14 +2701,11 @@
       async remove(id) {
         const atual = (window.motors || []).find(m => m.id === id) || {};
         const t = tagNorm(atual.tag);
-        if (t) {
-          const batch = writeBatch(db);
-          batch.delete(doc(db, 'motores', id));
-          batch.delete(tagRef(t));                         // libera a tag ao excluir o motor
-          await batch.commit();
-        } else {
-          await deleteDoc(doc(db, 'motores', id));
-        }
+        const batch = writeBatch(db);
+        batch.delete(doc(db, 'motores', id));
+        batch.delete(doc(db, 'fotos', id));                // remove a foto junto (no-op se não houver)
+        if (t) batch.delete(tagRef(t));                    // libera a tag ao excluir o motor
+        await batch.commit();
       }
     };
 
@@ -2506,6 +2722,20 @@
       return !!(window.Store && window.Store.mode === 'cloud');
     }
 
+    // ── FOTO DO MOTOR: doc separado /fotos/{motorId}, baixado sob demanda ──
+    async function savePhoto(motorId, base64, mime) {
+      await setDoc(doc(db, 'fotos', motorId), {
+        img: base64, mime: mime || 'image/jpeg', updatedTS: Date.now()
+      });
+    }
+    async function getPhoto(motorId) {
+      const s = await getDoc(doc(db, 'fotos', motorId));
+      return s.exists() ? s.data() : null;
+    }
+    async function deletePhoto(motorId) {
+      try { await deleteDoc(doc(db, 'fotos', motorId)); } catch (e) { console.warn('[deletePhoto]', e); }
+    }
+
     window.FB = {
       configured: true,
       // login com CUSTOM TOKEN emitido pela Function a quem acerta a senha
@@ -2513,7 +2743,8 @@
       // fallback: login anônimo — usado SÓ enquanto o secret FB_SERVICE_ACCOUNT
       // não estiver configurado (transição sem quebrar nada)
       signIn: () => signInAnonymously(auth),
-      ensureCloud
+      ensureCloud,
+      savePhoto, getPhoto, deletePhoto
     };
 
     // ao autenticar, assume o Store da nuvem, liga o tempo real e libera a tela
