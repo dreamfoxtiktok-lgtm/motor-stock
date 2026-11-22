@@ -1917,9 +1917,11 @@
       const code = e && e.code ? ` [${e.code}]` : '';
       const msg  = (e && e.message) ? e.message : String(e);
       flash('✗ NÃO salvou' + code + ': ' + msg);
-      // dica específica pro caso mais comum (regras recusando o documento)
+      // dica específica pro caso mais comum (regras recusando o documento).
+      // Com o índice de tags, permission-denied também pode ser TAG DUPLICADA
+      // numa corrida (outro aparelho gravou a mesma tag primeiro).
       if (e && e.code === 'permission-denied') {
-        flash('⚠ Bloqueado pelas regras do Firestore — verifique tamanho/tipo dos campos.');
+        flash('⚠ Pode ser TAG já usada por outro aparelho, ou regra do Firestore (tamanho/tipo). Confira a tag e os campos.');
       }
     } finally {
       if (btnSave) btnSave.disabled = false;
@@ -2328,7 +2330,8 @@
   import { initializeApp } from '/vendor/firebase/firebase-app.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField, enableNetwork
+    collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, deleteField, enableNetwork,
+    writeBatch, getDoc, setDoc
   } from '/vendor/firebase/firebase-firestore.js';
   import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged }
     from '/vendor/firebase/firebase-auth.js';
@@ -2367,6 +2370,16 @@
     const db   = initializeFirestore(app, cacheSettings);
     const auth = getAuth(app);
     const col  = collection(db, 'motores');
+
+    // ── Índice de TAGS (unicidade no servidor) ──────────────────────────────
+    // Coleção paralela 'tags/{TAG}' (1 doc por tag). Criar o doc da tag entra no
+    // MESMO batch do motor: se a tag já existir, o set vira UPDATE (proibido nas
+    // regras) e o batch inteiro falha — então dois aparelhos não conseguem gravar
+    // a mesma tag nem numa corrida. Fica FORA do onSnapshot (não pesa a lista).
+    // '/' não é permitido em id de documento → troca por '-'.
+    const tagDocId = t => String(t || '').trim().toUpperCase().replace(/\//g, '-');
+    const tagRef   = t => doc(db, 'tags', tagDocId(t));
+    const tagNorm  = t => String(t || '').trim().toUpperCase();
 
     // garante um usuário anônimo válido (re-loga se a sessão caiu)
     async function ensureAuth() {
@@ -2431,16 +2444,53 @@
           if (document.visibilityState === 'visible') this._scheduleResubscribe(300);
         });
       },
-      async add(data)        { await addDoc(col, { ...data, createdAt: new Date().toLocaleDateString('pt-BR'), createdTS: Date.now() }); },
+      async add(data) {
+        const payload = { ...data, createdAt: new Date().toLocaleDateString('pt-BR'), createdTS: Date.now() };
+        const tag = tagNorm(data.tag);
+        // tag é obrigatória no app; se por algum motivo vier vazia, grava sem índice
+        if (!tag) { await addDoc(col, payload); return; }
+        // batch atômico: cria o motor E reserva a tag. Tag repetida → batch falha.
+        const batch = writeBatch(db);
+        const ref = doc(col);                              // gera o id do novo motor
+        batch.set(ref, payload);
+        batch.set(tagRef(tag), { motorId: ref.id, tag, createdTS: Date.now() });
+        await batch.commit();
+        return ref.id;                                     // devolve o id (usado pela foto no #1)
+      },
       async update(id, data) {
         const payload = { ...data, updatedAt: new Date().toLocaleDateString('pt-BR') };
         // ao desmarcar flange, remove flangeFuros do documento pra não deixar dado órfão
         if (data.flange === false) payload.flangeFuros = deleteField();
         // ao desmarcar "testado", remove dataTeste/turnoTeste do documento
         if (data.testado === false) { payload.dataTeste = deleteField(); payload.turnoTeste = deleteField(); }
-        await updateDoc(doc(db, 'motores', id), payload);
+
+        const novoTag = tagNorm(data.tag);
+        const atual   = (window.motors || []).find(m => m.id === id) || {};
+        const velhoTag = tagNorm(atual.tag);
+
+        // tag mudou → reserva a nova e libera a antiga, tudo no mesmo batch
+        if (novoTag && novoTag !== velhoTag) {
+          const batch = writeBatch(db);
+          batch.update(doc(db, 'motores', id), payload);
+          batch.set(tagRef(novoTag), { motorId: id, tag: novoTag, createdTS: Date.now() });
+          if (velhoTag) batch.delete(tagRef(velhoTag));
+          await batch.commit();
+        } else {
+          await updateDoc(doc(db, 'motores', id), payload);
+        }
       },
-      async remove(id)       { await deleteDoc(doc(db, 'motores', id)); }
+      async remove(id) {
+        const atual = (window.motors || []).find(m => m.id === id) || {};
+        const t = tagNorm(atual.tag);
+        if (t) {
+          const batch = writeBatch(db);
+          batch.delete(doc(db, 'motores', id));
+          batch.delete(tagRef(t));                         // libera a tag ao excluir o motor
+          await batch.commit();
+        } else {
+          await deleteDoc(doc(db, 'motores', id));
+        }
+      }
     };
 
     // Garante modo nuvem SOB DEMANDA: espera a sessão restaurar/assumir (até ~8s).

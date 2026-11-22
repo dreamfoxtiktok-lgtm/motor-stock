@@ -66,6 +66,26 @@ service cloud.firestore {
       allow delete: if daEquipe();
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // ÍNDICE DE TAGS — unicidade da tag no SERVIDOR.
+    // 1 documento por tag (id = TAG em maiúsculas). O app cria o doc da tag no
+    // MESMO batch do motor. Como UPDATE é proibido aqui, tentar reservar uma tag
+    // que já existe vira update → o batch inteiro falha → tag não duplica, nem
+    // numa corrida entre dois aparelhos offline. delete libera a tag.
+    // ─────────────────────────────────────────────────────────────
+    function tagValida(d) {
+      return d.keys().hasOnly(['motorId','tag','createdTS'])
+        && 'tag'     in d && d.tag     is string && d.tag.size()     >= 1 && d.tag.size() <= 60
+        && 'motorId' in d && d.motorId is string && d.motorId.size() >= 1 && d.motorId.size() <= 200
+        && (!('createdTS' in d) || d.createdTS is number);
+    }
+    match /tags/{tag} {
+      allow read:   if daEquipe();
+      allow create: if daEquipe() && tagValida(request.resource.data);
+      allow update: if false;        // nunca atualiza → recriar tag existente falha (unicidade)
+      allow delete: if daEquipe();
+    }
+
     // nega tudo que não casar acima
     match /{document=**} {
       allow read, write: if false;
