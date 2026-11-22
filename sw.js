@@ -1,4 +1,4 @@
-const CACHE_NAME = 'motor-stock-v24';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v25';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
   '/manifest.json',
