@@ -1,9 +1,9 @@
-const CACHE_NAME = 'motor-stock-v21';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v22';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
   '/manifest.json',
   '/lib/chart.umd.min.js',
-  '/lib/xlsx.full.min.js',
+  '/lib/exceljs.min.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/fonts/inter-latin.woff2',
@@ -20,7 +20,13 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => Promise.allSettled(ASSETS.map(u => c.add(u))))
   );
-  self.skipWaiting();
+  // NÃO chama skipWaiting aqui: o SW novo fica em "waiting" para o app avisar o
+  // usuário ("nova versão disponível") e só assumir quando ele tocar em Atualizar.
+});
+
+// O app pede a troca (postMessage 'SKIP_WAITING') quando o usuário aceita atualizar.
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
