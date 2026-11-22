@@ -566,11 +566,9 @@
   .update-banner button { background: #fff; color: #1a2744; border: 0; font-weight: 800; font-size: 12.5px; padding: 7px 14px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
   .update-banner button:active { transform: scale(.96); }
   /* Foto do motor — seção do formulário */
-  .motorfoto-row { display: flex; gap: 8px; }
   .motorfoto-existente { display: flex; gap: 8px; margin-top: 10px; }
-  .motorfoto-preview { position: relative; margin-top: 10px; width: fit-content; }
-  .motorfoto-preview img { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid var(--navy-light); display: block; }
   .motorfoto-hint { margin-top: 8px; font-size: 11px; color: var(--muted); }
+  .motorfoto-hint:empty { display: none; }
   /* Visualizador em tela cheia */
   .foto-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1200; display: none; align-items: center; justify-content: center; padding: 16px; }
   .foto-overlay.open { display: flex; }
@@ -658,11 +656,9 @@
 </header>
 
 <!-- inputs ocultos -->
+<!-- inputs ocultos: galeria/arquivo e câmera do sistema (foto do motor) -->
 <input type="file" id="inputFile"    accept="image/*">
 <input type="file" id="inputCapture" accept="image/*" capture="environment">
-<!-- inputs ocultos da FOTO DO MOTOR (separados da leitura de placa) -->
-<input type="file" id="inputMotorFile"    accept="image/*">
-<input type="file" id="inputMotorCapture" accept="image/*" capture="environment">
 
 <div class="main">
   <div class="tabs">
@@ -674,12 +670,12 @@
   <!-- ══ PAINEL CADASTRO ══ -->
   <div id="paneCadastro">
 
-    <!-- IA SCAN -->
+    <!-- REGISTRO POR FOTO (foto do motor, salva na nuvem) -->
     <div class="scan-card">
       <div class="scan-header">
         <div class="ai-dot"></div>
-        <h3>Leitura por Foto</h3>
-        <small>IA reconhece a placa</small>
+        <h3>Registro por Foto</h3>
+        <small>Foto do motor — câmera ou galeria</small>
       </div>
       <div class="scan-body">
 
@@ -737,30 +733,20 @@
           </div>
         </div>
 
-        <!-- preview da foto selecionada -->
+        <!-- preview da foto do motor selecionada -->
         <div class="photo-preview-wrap" id="previewWrap">
-          <img id="previewImg" src="" alt="Foto da placa">
-          <button class="photo-clear" onclick="limparFoto()" title="Remover foto">
+          <img id="previewImg" src="" alt="Foto do motor">
+          <button class="photo-clear" onclick="removerFotoMotor()" title="Remover foto">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
-        <!-- botão Ler Placa -->
-        <button class="btn-scan-read" id="btnLerPlaca" onclick="lerPlacaComIA()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/>
-          </svg>
-          Ler Placa com IA
-        </button>
-
-        <!-- status processamento -->
-        <div class="ai-status" id="aiStatus">
-          <div class="spinner"></div>
-          <span id="aiStatusText">Analisando imagem...</span>
+        <!-- motor em edição que JÁ tem foto (não baixa até pedir) -->
+        <div class="motorfoto-existente" id="motorFotoExistente" style="display:none">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="verFoto(editingId)">Ver foto atual</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="removerFotoMotor()">Remover foto</button>
         </div>
-
-        <!-- resultado -->
-        <div class="ai-result-info" id="aiResultInfo"></div>
+        <div class="motorfoto-hint" id="motorFotoHint"></div>
 
       </div>
     </div>
@@ -877,36 +863,6 @@
             </select>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- FOTO DO MOTOR (guardada na nuvem, carregada sob demanda) -->
-    <div class="fcard">
-      <div class="fcard-title"><div class="stripe" style="background:var(--ai)"></div><span>Foto do Motor</span></div>
-      <div class="fcard-body">
-        <div class="motorfoto-row">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inputMotorCapture').click()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            Câmera
-          </button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inputMotorFile').click()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            Galeria
-          </button>
-        </div>
-        <!-- preview da foto NOVA escolhida -->
-        <div class="motorfoto-preview" id="motorFotoPreviewWrap" style="display:none">
-          <img id="motorFotoImg" src="" alt="Foto do motor">
-          <button type="button" class="photo-clear" onclick="removerFotoMotor()" title="Remover foto">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <!-- motor em edição que JÁ tem foto (não baixa até pedir) -->
-        <div class="motorfoto-existente" id="motorFotoExistente" style="display:none">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="verFoto(editingId)">Ver foto atual</button>
-          <button type="button" class="btn btn-danger btn-sm" onclick="removerFotoMotor()">Remover foto</button>
-        </div>
-        <div class="motorfoto-hint" id="motorFotoHint">Opcional — guardada na nuvem, custo zero.</div>
       </div>
     </div>
 
@@ -1075,8 +1031,6 @@
   const LOCAL_KEY = 'motors_stock';
   let deleteTarget = null;
   let editingId  = null;   // id do motor em edição (null = novo cadastro)
-  let fotoBase64 = null;   // base64 da foto atual (sem prefixo data:)
-  let fotoMime   = 'image/jpeg';
   let stream     = null;   // MediaStream da câmera
 
   // ── FOTO DO MOTOR (guardada na nuvem, doc separado /fotos/{id}) ──
@@ -1673,11 +1627,10 @@
     const raw = canvas.toDataURL('image/jpeg', .92);
     fecharCamera();
     try {
-      aplicarFoto(await comprimirImagem(raw));   // comprime antes de guardar
+      aplicarFotoMotor(await comprimirFotoMotor(raw));   // comprime antes de guardar
     } catch (e) {
       flash('⚠ Erro ao processar a foto');
     }
-    resetAiUI();
   }
 
   /* ══════════════════════════════════════════
@@ -1689,8 +1642,8 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
-        comprimirImagem(ev.target.result)       // comprime antes de guardar
-          .then(out => { aplicarFoto(out); resetAiUI(); })
+        comprimirFotoMotor(ev.target.result)       // comprime antes de guardar
+          .then(out => aplicarFotoMotor(out))
           .catch(() => flash('⚠ Erro ao processar a imagem'));
       };
       reader.readAsDataURL(file);
@@ -1699,62 +1652,6 @@
   }
   setupFileInput('inputFile');
   setupFileInput('inputCapture');
-
-  function limparFoto() {
-    fotoBase64 = null;
-    document.getElementById('previewWrap').classList.remove('show');
-    document.getElementById('previewImg').src = '';
-    document.getElementById('btnLerPlaca').classList.remove('show');
-    resetAiUI();
-  }
-
-  function resetAiUI() {
-    document.getElementById('aiStatus').classList.remove('show');
-    document.getElementById('aiResultInfo').classList.remove('show');
-    document.querySelectorAll('.fg input').forEach(i => i.classList.remove('filled-by-ai'));
-  }
-
-  /* ══════════════════════════════════════════
-     COMPRESSÃO DE IMAGEM (padrão das fotos de NC do SGI)
-     Reduz o maior lado e reencoda em JPEG, baixando a qualidade até caber
-     no teto — a foto da placa fica leve o bastante pro limite da Function.
-  ══════════════════════════════════════════ */
-  const IMG_MAX_DIM   = 1600;                 // maior lado, em px
-  const IMG_JPEG_Q    = 0.82;                 // qualidade inicial
-  const IMG_MAX_BYTES = 3.5 * 1024 * 1024;    // teto do base64 enviado (folga confortável sob o limite de corpo do Cloudflare)
-
-  function comprimirImagem(srcDataUrl) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, IMG_MAX_DIM / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width  * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        let q = IMG_JPEG_Q;
-        let dataUrl = canvas.toDataURL('image/jpeg', q);
-        // se ainda estourar o teto, baixa a qualidade progressivamente
-        while (dataUrl.length > IMG_MAX_BYTES && q > 0.4) {
-          q -= 0.12;
-          dataUrl = canvas.toDataURL('image/jpeg', q);
-        }
-        resolve({ dataUrl, base64: dataUrl.split(',')[1], mime: 'image/jpeg', w, h });
-      };
-      img.onerror = () => reject(new Error('Falha ao carregar a imagem'));
-      img.src = srcDataUrl;
-    });
-  }
-
-  // aplica a foto (já comprimida) na UI + estado
-  function aplicarFoto(out) {
-    fotoBase64 = out.base64;
-    fotoMime   = out.mime;
-    document.getElementById('previewImg').src = out.dataUrl;
-    document.getElementById('previewWrap').classList.add('show');
-    document.getElementById('btnLerPlaca').classList.add('show');
-  }
 
   /* ══════════════════════════════════════════
      FOTO DO MOTOR — captura, compressão e visualização
@@ -1789,39 +1686,23 @@
     });
   }
 
-  function setupMotorFotoInput(inputId) {
-    document.getElementById(inputId).addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        comprimirFotoMotor(ev.target.result)
-          .then(out => aplicarFotoMotor(out))
-          .catch(() => flash('⚠ Erro ao processar a foto do motor'));
-      };
-      reader.readAsDataURL(file);
-      this.value = '';
-    });
-  }
-  setupMotorFotoInput('inputMotorFile');
-  setupMotorFotoInput('inputMotorCapture');
-
+  // aplica a foto escolhida (preview no card de Registro por Foto)
   function aplicarFotoMotor(out) {
     motorFotoBase64   = out.base64;
     motorFotoMime     = out.mime;
     motorFotoDirty    = true;
     motorFotoRemovida = false;
-    document.getElementById('motorFotoImg').src = out.dataUrl;
-    document.getElementById('motorFotoPreviewWrap').style.display = '';
+    document.getElementById('previewImg').src = out.dataUrl;
+    document.getElementById('previewWrap').classList.add('show');
     document.getElementById('motorFotoExistente').style.display = 'none';
-    document.getElementById('motorFotoHint').textContent = 'Nova foto pronta — será salva ao cadastrar/salvar.';
+    document.getElementById('motorFotoHint').textContent = 'Foto pronta — será salva ao cadastrar/salvar.';
   }
 
   function removerFotoMotor() {
     motorFotoBase64 = null;
     motorFotoDirty  = false;
-    document.getElementById('motorFotoImg').src = '';
-    document.getElementById('motorFotoPreviewWrap').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+    document.getElementById('previewWrap').classList.remove('show');
     document.getElementById('motorFotoExistente').style.display = 'none';
     // editando um motor que TINHA foto → marca pra apagar na nuvem ao salvar
     if (editingId && editTemFoto) {
@@ -1829,17 +1710,17 @@
       document.getElementById('motorFotoHint').textContent = '🗑 A foto será removida ao salvar.';
     } else {
       motorFotoRemovida = false;
-      document.getElementById('motorFotoHint').textContent = 'Opcional — guardada na nuvem, custo zero.';
+      document.getElementById('motorFotoHint').textContent = '';
     }
   }
 
   // reseta todo o estado da foto do motor (usado no clearForm e ao abrir edição)
   function resetFotoMotorUI() {
     motorFotoBase64 = null; motorFotoDirty = false; motorFotoRemovida = false; editTemFoto = false;
-    document.getElementById('motorFotoImg').src = '';
-    document.getElementById('motorFotoPreviewWrap').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+    document.getElementById('previewWrap').classList.remove('show');
     document.getElementById('motorFotoExistente').style.display = 'none';
-    document.getElementById('motorFotoHint').textContent = 'Opcional — guardada na nuvem, custo zero.';
+    document.getElementById('motorFotoHint').textContent = '';
   }
 
   // visualizador em tela cheia — baixa a foto do /fotos/{id} só agora
@@ -1868,79 +1749,6 @@
     document.getElementById('fotoOverlay').classList.remove('open');
     const img = document.getElementById('fotoFull');
     img.src = ''; img.style.display = 'none';
-  }
-
-  /* ══════════════════════════════════════════
-     LEITURA COM IA — CLAUDE VISION
-  ══════════════════════════════════════════ */
-  async function lerPlacaComIA() {
-    if (!fotoBase64) return;
-    if (fotoBase64.length > IMG_MAX_BYTES) { flash('⚠ Imagem muito grande — tire a foto de novo'); return; }
-
-    const statusEl = document.getElementById('aiStatus');
-    const statusTxt = document.getElementById('aiStatusText');
-    const resultEl  = document.getElementById('aiResultInfo');
-    const btnLer    = document.getElementById('btnLerPlaca');
-
-    statusTxt.textContent = 'Analisando imagem...';
-    statusEl.classList.add('show');
-    resultEl.classList.remove('show');
-    btnLer.disabled = true;
-
-    try {
-      statusTxt.textContent = 'Enviando para análise...';
-      // A IA roda na Cloudflare Pages Function (Cloudflare Workers AI). A chave fica no
-      // servidor, nunca no navegador. A Function devolve o objeto de campos já validado.
-      const resp = await fetch('/api/ler-placa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imagem: fotoBase64, mime: fotoMime })
-      });
-
-      statusTxt.textContent = 'Interpretando dados...';
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(()=>({}));
-        throw new Error(err?.erro || ('Erro na IA (HTTP ' + resp.status + ')'));
-      }
-
-      const campos = await resp.json();
-
-      // preenche os campos
-      const mapa = { tag:'f_tag', carcaca:'f_carcaca', fabricante:'f_fabricante',
-                     potencia:'f_potencia', amp:'f_amp', fs:'f_fs',
-                     rpm:'f_rpm', eixo:'f_eixo', obs:'f_obs' };
-
-      let preenchidos = 0;
-      for (const [campo, inputId] of Object.entries(mapa)) {
-        if (campos[campo]) {
-          const el = document.getElementById(inputId);
-          el.value = String(campos[campo]);
-          el.classList.add('filled-by-ai');
-          preenchidos++;
-          if (campo === 'rpm') calcPolos(el.value);
-        }
-      }
-
-      statusEl.classList.remove('show');
-      btnLer.disabled = false;
-
-      if (preenchidos === 0) {
-        resultEl.innerHTML = '⚠ Nenhum dado reconhecido. Tente uma foto mais próxima e nítida da placa.';
-        resultEl.classList.add('show');
-      } else {
-        resultEl.innerHTML = `<strong>✓ ${preenchidos} campo${preenchidos>1?'s':''} preenchido${preenchidos>1?'s':''}</strong> — Campos em roxo foram preenchidos pela IA. Verifique e ajuste se necessário.`;
-        resultEl.classList.add('show');
-        flash(`✓ IA preencheu ${preenchidos} campo${preenchidos>1?'s':''}`);
-      }
-
-    } catch(err) {
-      console.error(err);
-      statusEl.classList.remove('show');
-      btnLer.disabled = false;
-      resultEl.innerHTML = '✗ Erro ao processar: ' + (err.message || 'tente novamente');
-      resultEl.classList.add('show');
-    }
   }
 
   /* ══════════════════════════════════════════
@@ -2428,7 +2236,6 @@
     document.getElementById('poloHint').innerHTML='';
     editingId = null;
     setFormMode(false);
-    limparFoto();
     resetFotoMotorUI();
   }
   // alterna o rótulo do formulário entre "Cadastrar" e "Salvar edição"
