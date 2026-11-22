@@ -957,14 +957,6 @@
         <div class="dash-card-title">Motores por Potência</div>
         <div class="chart-box" id="boxPotVal"><canvas id="chartPotVal"></canvas></div>
       </div>
-      <div class="dash-card dash-card-wide">
-        <div class="dash-card-title">Movimentações por Mês (saídas × retornos)</div>
-        <div class="chart-box" id="boxMov"><canvas id="chartMov"></canvas></div>
-      </div>
-      <div class="dash-card dash-card-wide">
-        <div class="dash-card-title">Motores mais movimentados</div>
-        <div class="chart-box" id="boxMaisMov"><canvas id="chartMaisMov"></canvas></div>
-      </div>
     </div>
 
   </div>
@@ -1154,10 +1146,24 @@
   // dashFilter = null | { dim:'status'|'carcaca'|'potencia', value, label }
   let dashFilter = null;
 
+  // valores comerciais de cv (mesma tabela da lista suspensa de potência)
+  const CV_PADRAO = [0.16,0.25,0.33,0.5,0.75,1,1.5,2,3,4,5,6,7.5,10,12.5,15,20,25];
+  // encaixa a cv lida no valor comercial mais próximo (dentro de ~8%); se não
+  // houver padrão perto, arredonda a 2 casas. Evita rótulos quebrados tipo
+  // "5,030591434 cv" (de conversões kW→cv) e agrupa motores iguais sob a
+  // mesma potência comercial — era o que deixava o gráfico fragmentado.
+  function cvComercial(v) {
+    let best = v, bd = Infinity;
+    for (const p of CV_PADRAO) { const d = Math.abs(p - v) / p; if (d < bd) { bd = d; best = p; } }
+    return bd <= 0.08 ? best : Math.round(v * 100) / 100;
+  }
+
   // chave de potência em cv usada tanto no gráfico quanto no filtro (mesma regra)
   function potKey(m) {
-    const v = parsePot(m.potencia);
-    return v > 0 ? ((Number.isInteger(v) ? String(v) : String(v).replace('.', ',')) + ' cv') : 'N/D';
+    const raw = parsePot(m.potencia);
+    if (!(raw > 0)) return 'N/D';
+    const v = cvComercial(raw);
+    return (Number.isInteger(v) ? String(v) : String(v).replace('.', ',')) + ' cv';
   }
 
   function matchesDashFilter(m) {
@@ -1191,12 +1197,12 @@
 
   function renderDashboard() {
     if (!motors.length) {
-      ['status','car','potval','mov','maismov'].forEach(destroyChart);
+      ['status','car','potval'].forEach(destroyChart);
       dashFilter = null;
       const fb0 = document.getElementById('dashFilterBar'); if (fb0) fb0.innerHTML = '';
       document.getElementById('kpiRow').innerHTML =
         '<div class="dash-empty" style="grid-column:1/-1">Nenhum motor cadastrado ainda.</div>';
-      [['boxStatus'],['boxCarcaca'],['boxPotVal'],['boxMov'],['boxMaisMov']]
+      [['boxStatus'],['boxCarcaca'],['boxPotVal']]
         .forEach(([id]) => { const b=document.getElementById(id); if(b){ b.style.height='auto'; b.innerHTML='<div class="dash-empty">Sem dados</div>'; } });
       return;
     }
@@ -1212,8 +1218,7 @@
     const base = motors.filter(matchesDashFilter);
     // garante os canvases (podem ter sido trocados por "Sem dados" antes)
     ensureCanvas('boxStatus','chartStatus'); ensureCanvas('boxCarcaca','chartCarcaca');
-    ensureCanvas('boxPotVal','chartPotVal'); ensureCanvas('boxMov','chartMov');
-    ensureCanvas('boxMaisMov','chartMaisMov');
+    ensureCanvas('boxPotVal','chartPotVal');
     // pílula de filtro + dica
     const fb = document.getElementById('dashFilterBar');
     if (fb) {
@@ -1335,62 +1340,6 @@
         onClick: (evt, els) => { if (els.length) { const k = carSorted[els[0].index][0]; setDashFilter('carcaca', k, 'Carcaça: ' + k); } }
       }
     });
-
-    // ── GRÁFICO 4: Movimentações por Mês (saídas × retornos, via histórico) ──
-    // Saídas = retirado p/ uso + enviado p/ conserto (deixou o estoque); Retornos = voltou ao estoque.
-    destroyChart('mov');
-    const saidas = {}, retornos = {};
-    const mesKey = d => { const p=(d||'').split('/'); return p.length===3 ? p[1]+'/'+p[2] : null; };
-    base.forEach(m => {
-      (Array.isArray(m.historico) ? m.historico : []).forEach(h => {
-        const k = mesKey(h.data); if (!k) return;
-        if (h.acao === 'Retirado para uso' || h.acao === 'Enviado para conserto') saidas[k]=(saidas[k]||0)+1;
-        else if (h.acao === 'Retornado ao estoque') retornos[k]=(retornos[k]||0)+1;
-      });
-    });
-    const movMeses = [...new Set([...Object.keys(saidas), ...Object.keys(retornos)])].sort((a,b)=>a.localeCompare(b));
-    document.getElementById('boxMov').style.height = '220px';
-    _charts['mov'] = new Chart(document.getElementById('chartMov'), {
-      type: 'bar',
-      data: {
-        labels: movMeses,
-        datasets:[
-          { label:'Saídas',   data: movMeses.map(k=>saidas[k]||0),   backgroundColor:'#f5c518', borderRadius:4, borderSkipped:false },
-          { label:'Retornos', data: movMeses.map(k=>retornos[k]||0), backgroundColor:'#4fa3e0', borderRadius:4, borderSkipped:false },
-        ]
-      },
-      options: {
-        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:12, font:{size:11} } } },
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}, ticks:{stepSize:1}, beginAtZero:true} },
-        responsive:true, maintainAspectRatio:false
-      }
-    });
-
-    // ── GRÁFICO 5: Motores mais movimentados (ranking por nº de movimentações) ──
-    // Conta as entradas do histórico que representam movimentação de verdade
-    // (exclui o "Cadastrado"). Mostra o top 8, barras horizontais.
-    destroyChart('maismov');
-    const maisMov = base.map(m => {
-      const h = Array.isArray(m.historico) ? m.historico : [];
-      const n = h.filter(x => x && x.acao && x.acao !== 'Cadastrado').length;
-      const rotulo = (m.tag && m.tag.trim()) ? m.tag : ('Carc. ' + (m.carcaca || '?'));
-      return { rotulo, n };
-    }).filter(x => x.n > 0).sort((a,b) => b.n - a.n).slice(0, 8);
-
-    _charts['maismov'] = new Chart(document.getElementById('chartMaisMov'), {
-      type: 'bar',
-      data: {
-        labels: maisMov.map(x => x.rotulo),
-        datasets:[{ data: maisMov.map(x => x.n), backgroundColor:'#b57bee', borderRadius:4, borderSkipped:false }]
-      },
-      options: {
-        indexAxis:'y',
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.parsed.x} movimentaç${c.parsed.x!==1?'ões':'ão'}` } } },
-        scales:{ x:{grid:{color:gridColor}, ticks:{stepSize:1, precision:0}, beginAtZero:true}, y:{grid:{display:false}} },
-        responsive:true, maintainAspectRatio:false
-      }
-    });
-    document.getElementById('boxMaisMov').style.height = Math.max(140, maisMov.length * 36 + 40) + 'px';
   }
 
   // extrai valor numérico de potência em cv
