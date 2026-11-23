@@ -569,12 +569,19 @@
   .motorfoto-existente { display: flex; gap: 8px; margin-top: 10px; }
   .motorfoto-hint { margin-top: 8px; font-size: 11px; color: var(--muted); }
   .motorfoto-hint:empty { display: none; }
+  /* dois slots de foto (Foto 1 / Foto 2) */
+  .foto-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .foto-slots { grid-template-columns: 1fr; } }
+  .foto-slot { min-width: 0; }
+  .foto-slot-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: .3px; }
+  .foto-slot-opt { font-weight: 500; opacity: .7; }
   /* Visualizador em tela cheia */
   .foto-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1200; display: none; align-items: center; justify-content: center; padding: 16px; }
   .foto-overlay.open { display: flex; }
   .foto-box { position: relative; max-width: 96vw; max-height: 92vh; display: flex; align-items: center; justify-content: center; }
   .foto-box img { max-width: 96vw; max-height: 92vh; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
   .foto-close { position: absolute; top: -6px; right: -6px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: #fff; color: #1a2744; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.4); z-index: 2; }
+  .foto-toggle { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); border: 0; background: rgba(255,255,255,.92); color: #1a2744; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 20px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.4); z-index: 2; }
   .foto-loading { color: #f0f4ff; font-size: 13px; font-weight: 600; padding: 24px; }
   .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
   .overlay.open { display: flex; }
@@ -656,9 +663,11 @@
 </header>
 
 <!-- inputs ocultos -->
-<!-- inputs ocultos: galeria/arquivo e câmera do sistema (foto do motor) -->
-<input type="file" id="inputFile"    accept="image/*">
-<input type="file" id="inputCapture" accept="image/*" capture="environment">
+<!-- inputs ocultos: galeria/arquivo e câmera do sistema (fotos do motor, 1 par por slot) -->
+<input type="file" id="inputFile1"    accept="image/*">
+<input type="file" id="inputCapture1" accept="image/*" capture="environment">
+<input type="file" id="inputFile2"    accept="image/*">
+<input type="file" id="inputCapture2" accept="image/*" capture="environment">
 
 <div class="main">
   <div class="tabs">
@@ -675,79 +684,128 @@
       <div class="scan-header">
         <div class="ai-dot"></div>
         <h3>Registro por Foto</h3>
-        <small>Foto do motor — câmera ou galeria</small>
+        <small>Até 2 fotos do motor — câmera ou galeria</small>
       </div>
       <div class="scan-body">
+        <div class="foto-slots">
 
-        <!-- botão único + dropdown -->
-        <div class="scan-trigger-wrap" id="scanBtns">
-          <button class="btn-scan-trigger" id="btnTrigger" onclick="toggleScanMenu()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-            Registrar por Imagem
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
+          <!-- ░░ SLOT 1 ░░ -->
+          <div class="foto-slot">
+            <div class="foto-slot-label">Foto 1</div>
 
-          <div class="scan-dropdown" id="scanDropdown">
-            <button class="scan-opt" onclick="abrirCamera(); fecharMenu()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
-              <div>
-                Câmera ao vivo
-                <small>Abre a câmera do celular ou webcam</small>
+            <div class="scan-trigger-wrap" id="scanBtns1">
+              <button class="btn-scan-trigger" id="btnTrigger1" onclick="toggleScanMenu(1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                Registrar Foto 1
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="scan-dropdown" id="scanDropdown1">
+                <button class="scan-opt" onclick="abrirCamera(1); fecharMenu(1)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <div>Câmera ao vivo<small>Abre a câmera do celular ou webcam</small></div>
+                </button>
+                <button class="scan-opt" onclick="document.getElementById('inputFile1').click(); fecharMenu(1)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <div>Galeria / Arquivo<small>Seleciona uma foto já tirada</small></div>
+                </button>
               </div>
-            </button>
-            <button class="scan-opt" onclick="document.getElementById('inputFile').click(); fecharMenu()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-              <div>
-                Galeria / Arquivo
-                <small>Seleciona uma foto já tirada</small>
+            </div>
+
+            <div class="camera-wrap" id="cameraWrap1">
+              <video id="videoEl1" autoplay playsinline muted></video>
+              <div class="camera-controls">
+                <button class="cam-btn cam-cancel" onclick="fecharCamera(1)" title="Cancelar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button class="cam-btn cam-capture" onclick="capturarFoto(1)" title="Tirar foto">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </button>
               </div>
-            </button>
+            </div>
+
+            <div class="photo-preview-wrap" id="previewWrap1">
+              <img id="previewImg1" src="" alt="Foto 1 do motor">
+              <button class="photo-clear" onclick="removerFotoMotor(1)" title="Remover foto">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div class="motorfoto-existente" id="motorFotoExistente1" style="display:none">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="verFoto(editingId,1)">Ver foto atual</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="removerFotoMotor(1)">Remover foto</button>
+            </div>
+            <div class="motorfoto-hint" id="motorFotoHint1"></div>
           </div>
-        </div>
 
-        <!-- viewfinder câmera ao vivo -->
-        <div class="camera-wrap" id="cameraWrap">
-          <video id="videoEl" autoplay playsinline muted></video>
-          <div class="camera-controls">
-            <button class="cam-btn cam-cancel" onclick="fecharCamera()" title="Cancelar">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-            <button class="cam-btn cam-capture" onclick="capturarFoto()" title="Tirar foto">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
-            </button>
+          <!-- ░░ SLOT 2 ░░ -->
+          <div class="foto-slot">
+            <div class="foto-slot-label">Foto 2 <span class="foto-slot-opt">(opcional)</span></div>
+
+            <div class="scan-trigger-wrap" id="scanBtns2">
+              <button class="btn-scan-trigger" id="btnTrigger2" onclick="toggleScanMenu(2)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                Registrar Foto 2
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <div class="scan-dropdown" id="scanDropdown2">
+                <button class="scan-opt" onclick="abrirCamera(2); fecharMenu(2)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <div>Câmera ao vivo<small>Abre a câmera do celular ou webcam</small></div>
+                </button>
+                <button class="scan-opt" onclick="document.getElementById('inputFile2').click(); fecharMenu(2)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <div>Galeria / Arquivo<small>Seleciona uma foto já tirada</small></div>
+                </button>
+              </div>
+            </div>
+
+            <div class="camera-wrap" id="cameraWrap2">
+              <video id="videoEl2" autoplay playsinline muted></video>
+              <div class="camera-controls">
+                <button class="cam-btn cam-cancel" onclick="fecharCamera(2)" title="Cancelar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button class="cam-btn cam-capture" onclick="capturarFoto(2)" title="Tirar foto">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="photo-preview-wrap" id="previewWrap2">
+              <img id="previewImg2" src="" alt="Foto 2 do motor">
+              <button class="photo-clear" onclick="removerFotoMotor(2)" title="Remover foto">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div class="motorfoto-existente" id="motorFotoExistente2" style="display:none">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="verFoto(editingId,2)">Ver foto atual</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="removerFotoMotor(2)">Remover foto</button>
+            </div>
+            <div class="motorfoto-hint" id="motorFotoHint2"></div>
           </div>
-        </div>
 
-        <!-- preview da foto do motor selecionada -->
-        <div class="photo-preview-wrap" id="previewWrap">
-          <img id="previewImg" src="" alt="Foto do motor">
-          <button class="photo-clear" onclick="removerFotoMotor()" title="Remover foto">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
         </div>
-
-        <!-- motor em edição que JÁ tem foto (não baixa até pedir) -->
-        <div class="motorfoto-existente" id="motorFotoExistente" style="display:none">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="verFoto(editingId)">Ver foto atual</button>
-          <button type="button" class="btn btn-danger btn-sm" onclick="removerFotoMotor()">Remover foto</button>
-        </div>
-        <div class="motorfoto-hint" id="motorFotoHint"></div>
-
       </div>
     </div>
 
@@ -1003,6 +1061,7 @@
     </button>
     <div class="foto-loading" id="fotoLoading">Carregando foto…</div>
     <img id="fotoFull" src="" alt="Foto do motor" style="display:none">
+    <button class="foto-toggle" id="fotoToggle" onclick="toggleFotoView()" style="display:none">Ver foto 2 ▶</button>
   </div>
 </div>
 <div class="overlay" id="overlay">
@@ -1062,12 +1121,14 @@
   let editingId  = null;   // id do motor em edição (null = novo cadastro)
   let stream     = null;   // MediaStream da câmera
 
-  // ── FOTO DO MOTOR (guardada na nuvem, doc separado /fotos/{id}) ──
-  let motorFotoBase64   = null;        // base64 da foto NOVA a salvar
-  let motorFotoMime     = 'image/jpeg';
-  let motorFotoDirty    = false;       // usuário escolheu uma foto nova nesta sessão de form
-  let motorFotoRemovida = false;       // usuário removeu a foto existente (edição)
-  let editTemFoto       = false;       // o motor em edição já tinha foto?
+  // ── FOTOS DO MOTOR (até 2, guardadas na nuvem no doc /fotos/{id}) ──
+  //   slot 1 → campos img/mime ; slot 2 → campos img2/mime2
+  //   dirty = escolheu foto nova nesta sessão · removida = removeu a existente (edição)
+  //   editTem = o motor em edição já tinha ESTA foto salva
+  const FOTO = {
+    1: { base64:null, mime:'image/jpeg', dirty:false, removida:false, editTem:false },
+    2: { base64:null, mime:'image/jpeg', dirty:false, removida:false, editTem:false }
+  };
 
   const hojeBR = () => new Date().toLocaleDateString('pt-BR');
   function mirrorLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(motors)); } catch {} }
@@ -1570,61 +1631,66 @@
   /* ══════════════════════════════════════════
      MENU DROPDOWN DE SCAN
   ══════════════════════════════════════════ */
-  function toggleScanMenu() {
-    const dropdown = document.getElementById('scanDropdown');
-    const btn      = document.getElementById('btnTrigger');
+  function toggleScanMenu(slot) {
+    const dropdown = document.getElementById('scanDropdown'+slot);
+    const btn      = document.getElementById('btnTrigger'+slot);
     const isOpen   = dropdown.classList.contains('open');
-    if (isOpen) {
-      dropdown.classList.remove('open');
-      btn.classList.remove('open');
-    } else {
-      dropdown.classList.add('open');
-      btn.classList.add('open');
-    }
+    fecharMenu();                       // fecha qualquer outro aberto
+    if (!isOpen) { dropdown.classList.add('open'); btn.classList.add('open'); }
   }
-  function fecharMenu() {
-    document.getElementById('scanDropdown').classList.remove('open');
-    document.getElementById('btnTrigger').classList.remove('open');
+  function fecharMenu(slot) {
+    if (slot === undefined) { fecharMenu(1); fecharMenu(2); return; }
+    document.getElementById('scanDropdown'+slot).classList.remove('open');
+    document.getElementById('btnTrigger'+slot).classList.remove('open');
   }
   // fecha ao clicar fora
   document.addEventListener('click', e => {
-    const wrap = document.getElementById('scanBtns');
-    if (wrap && !wrap.contains(e.target)) fecharMenu();
+    [1,2].forEach(s => {
+      const wrap = document.getElementById('scanBtns'+s);
+      if (wrap && !wrap.contains(e.target)) fecharMenu(s);
+    });
   });
 
   /* ══════════════════════════════════════════
-     CÂMERA AO VIVO
+     CÂMERA AO VIVO (por slot: 1 ou 2)
   ══════════════════════════════════════════ */
-  async function abrirCamera() {
+  let camSlot = null;                   // slot cuja câmera está aberta
+  async function abrirCamera(slot) {
+    if (camSlot && camSlot !== slot) fecharCamera(camSlot);   // fecha câmera aberta no outro slot
+    camSlot = slot;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
       });
-      document.getElementById('videoEl').srcObject = stream;
-      document.getElementById('cameraWrap').classList.add('show');
-      document.getElementById('scanBtns').style.display = 'none';
+      document.getElementById('videoEl'+slot).srcObject = stream;
+      document.getElementById('cameraWrap'+slot).classList.add('show');
+      document.getElementById('scanBtns'+slot).style.display = 'none';
     } catch(e) {
-      // fallback: input com capture
-      document.getElementById('inputCapture').click();
+      // fallback: input com capture do sistema
+      document.getElementById('inputCapture'+slot).click();
     }
   }
 
-  function fecharCamera() {
+  function fecharCamera(slot) {
+    slot = slot || camSlot;
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    document.getElementById('cameraWrap').classList.remove('show');
-    document.getElementById('scanBtns').style.display = '';
+    if (slot) {
+      document.getElementById('cameraWrap'+slot).classList.remove('show');
+      document.getElementById('scanBtns'+slot).style.display = '';
+    }
+    camSlot = null;
   }
 
-  async function capturarFoto() {
-    const video  = document.getElementById('videoEl');
+  async function capturarFoto(slot) {
+    const video  = document.getElementById('videoEl'+slot);
     const canvas = document.getElementById('snapCanvas');
     canvas.width  = video.videoWidth  || 1280;
     canvas.height = video.videoHeight || 720;
     canvas.getContext('2d').drawImage(video, 0, 0);
     const raw = canvas.toDataURL('image/jpeg', .92);
-    fecharCamera();
+    fecharCamera(slot);
     try {
-      aplicarFotoMotor(await comprimirFotoMotor(raw));   // comprime antes de guardar
+      aplicarFotoMotor(slot, await comprimirFotoMotor(raw));   // comprime antes de guardar
     } catch (e) {
       flash('⚠ Erro ao processar a foto');
     }
@@ -1633,32 +1699,35 @@
   /* ══════════════════════════════════════════
      UPLOAD DE ARQUIVO
   ══════════════════════════════════════════ */
-  function setupFileInput(inputId) {
+  function setupFileInput(inputId, slot) {
     document.getElementById(inputId).addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
         comprimirFotoMotor(ev.target.result)       // comprime antes de guardar
-          .then(out => aplicarFotoMotor(out))
+          .then(out => aplicarFotoMotor(slot, out))
           .catch(() => flash('⚠ Erro ao processar a imagem'));
       };
       reader.readAsDataURL(file);
       this.value = '';
     });
   }
-  setupFileInput('inputFile');
-  setupFileInput('inputCapture');
+  setupFileInput('inputFile1', 1);
+  setupFileInput('inputCapture1', 1);
+  setupFileInput('inputFile2', 2);
+  setupFileInput('inputCapture2', 2);
 
   /* ══════════════════════════════════════════
-     FOTO DO MOTOR — captura, compressão e visualização
-     Guardada em doc separado (/fotos/{id}) e baixada SÓ sob demanda, pra não
-     pesar a sincronização em tempo real da lista. Alvo mais enxuto que a foto
-     da placa: cabe no limite de 1 doc do Firestore (< 1 MB) e economiza cota.
+     FOTOS DO MOTOR — captura, compressão e visualização
+     Guardadas em doc separado (/fotos/{id}) e baixadas SÓ sob demanda, pra não
+     pesar a sincronização em tempo real da lista. Como são até 2 fotos no MESMO
+     doc, cada uma é comprimida pra ~460 KB — as duas juntas cabem no limite de
+     1 MB de um documento do Firestore.
   ══════════════════════════════════════════ */
   const FOTO_MOTOR_DIM   = 1024;               // maior lado, em px
   const FOTO_MOTOR_Q     = 0.72;               // qualidade JPEG inicial
-  const FOTO_MOTOR_MAX   = 700 * 1024;         // teto do base64 (~700 KB, folga sob o limite de 1 MB do doc)
+  const FOTO_MOTOR_MAX   = 460 * 1024;         // teto do base64 por foto (~460 KB; 2 fotos < 1 MB do doc)
 
   function comprimirFotoMotor(srcDataUrl) {
     return new Promise((resolve, reject) => {
@@ -1683,69 +1752,96 @@
     });
   }
 
-  // aplica a foto escolhida (preview no card de Registro por Foto)
-  function aplicarFotoMotor(out) {
-    motorFotoBase64   = out.base64;
-    motorFotoMime     = out.mime;
-    motorFotoDirty    = true;
-    motorFotoRemovida = false;
-    document.getElementById('previewImg').src = out.dataUrl;
-    document.getElementById('previewWrap').classList.add('show');
-    document.getElementById('motorFotoExistente').style.display = 'none';
-    document.getElementById('motorFotoHint').textContent = 'Foto pronta — será salva ao cadastrar/salvar.';
+  // aplica a foto escolhida a um slot (preview no card de Registro por Foto)
+  function aplicarFotoMotor(slot, out) {
+    const st = FOTO[slot];
+    st.base64 = out.base64; st.mime = out.mime; st.dirty = true; st.removida = false;
+    document.getElementById('previewImg'+slot).src = out.dataUrl;
+    document.getElementById('previewWrap'+slot).classList.add('show');
+    document.getElementById('motorFotoExistente'+slot).style.display = 'none';
+    document.getElementById('motorFotoHint'+slot).textContent = 'Foto pronta — será salva ao cadastrar/salvar.';
   }
 
-  function removerFotoMotor() {
-    motorFotoBase64 = null;
-    motorFotoDirty  = false;
-    document.getElementById('previewImg').src = '';
-    document.getElementById('previewWrap').classList.remove('show');
-    document.getElementById('motorFotoExistente').style.display = 'none';
-    // editando um motor que TINHA foto → marca pra apagar na nuvem ao salvar
-    if (editingId && editTemFoto) {
-      motorFotoRemovida = true;
-      document.getElementById('motorFotoHint').textContent = '🗑 A foto será removida ao salvar.';
+  function removerFotoMotor(slot) {
+    const st = FOTO[slot];
+    st.base64 = null; st.dirty = false;
+    document.getElementById('previewImg'+slot).src = '';
+    document.getElementById('previewWrap'+slot).classList.remove('show');
+    document.getElementById('motorFotoExistente'+slot).style.display = 'none';
+    // editando um motor que TINHA esta foto → marca pra apagar na nuvem ao salvar
+    if (editingId && st.editTem) {
+      st.removida = true;
+      document.getElementById('motorFotoHint'+slot).textContent = '🗑 Esta foto será removida ao salvar.';
     } else {
-      motorFotoRemovida = false;
-      document.getElementById('motorFotoHint').textContent = '';
+      st.removida = false;
+      document.getElementById('motorFotoHint'+slot).textContent = '';
     }
   }
 
-  // reseta todo o estado da foto do motor (usado no clearForm e ao abrir edição)
+  // reseta o estado das DUAS fotos (usado no clearForm e ao abrir edição)
   function resetFotoMotorUI() {
-    motorFotoBase64 = null; motorFotoDirty = false; motorFotoRemovida = false; editTemFoto = false;
-    document.getElementById('previewImg').src = '';
-    document.getElementById('previewWrap').classList.remove('show');
-    document.getElementById('motorFotoExistente').style.display = 'none';
-    document.getElementById('motorFotoHint').textContent = '';
+    [1,2].forEach(slot => {
+      const st = FOTO[slot];
+      st.base64 = null; st.mime = 'image/jpeg'; st.dirty = false; st.removida = false; st.editTem = false;
+      document.getElementById('previewImg'+slot).src = '';
+      document.getElementById('previewWrap'+slot).classList.remove('show');
+      document.getElementById('motorFotoExistente'+slot).style.display = 'none';
+      document.getElementById('motorFotoHint'+slot).textContent = '';
+    });
   }
 
-  // visualizador em tela cheia — baixa a foto do /fotos/{id} só agora
-  async function verFoto(id) {
+  // visualizador em tela cheia — baixa o doc /fotos/{id} (as 2 fotos) só agora
+  let fotoView = { data:null, cur:1 };
+  async function verFoto(id, slot) {
     if (!id) return;
     const ov   = document.getElementById('fotoOverlay');
     const img  = document.getElementById('fotoFull');
     const load = document.getElementById('fotoLoading');
+    const tog  = document.getElementById('fotoToggle');
     img.style.display = 'none'; img.src = ''; load.style.display = ''; load.textContent = 'Carregando foto…';
+    if (tog) tog.style.display = 'none';
     ov.classList.add('open');
     try {
       if (!(window.FB && window.FB.configured && typeof window.FB.getPhoto === 'function')) {
         load.textContent = 'Foto disponível apenas no modo nuvem.'; return;
       }
       const f = await window.FB.getPhoto(id);
-      if (!f || !f.img) { load.textContent = 'Foto não encontrada.'; return; }
-      img.onload  = () => { load.style.display = 'none'; img.style.display = ''; };
-      img.onerror = () => { load.textContent = 'Falha ao exibir a foto.'; };
-      img.src = `data:${f.mime || 'image/jpeg'};base64,${f.img}`;
+      if (!f || (!f.img && !f.img2)) { load.textContent = 'Foto não encontrada.'; return; }
+      fotoView.data = f;
+      // começa pelo slot pedido; se não existir, cai no outro disponível
+      let start = slot || 1;
+      if (start === 1 && !f.img)  start = 2;
+      if (start === 2 && !f.img2) start = 1;
+      mostrarFotoSlot(start);
     } catch (e) {
       console.error('[verFoto]', e);
       load.textContent = 'Erro ao carregar a foto.';
     }
   }
+  function mostrarFotoSlot(slot) {
+    const f = fotoView.data; if (!f) return;
+    fotoView.cur = slot;
+    const img  = document.getElementById('fotoFull');
+    const load = document.getElementById('fotoLoading');
+    const tog  = document.getElementById('fotoToggle');
+    const b64  = slot === 2 ? f.img2 : f.img;
+    const mime = slot === 2 ? (f.mime2 || 'image/jpeg') : (f.mime || 'image/jpeg');
+    load.style.display = ''; load.textContent = 'Carregando foto…'; img.style.display = 'none';
+    img.onload  = () => { load.style.display = 'none'; img.style.display = ''; };
+    img.onerror = () => { load.textContent = 'Falha ao exibir a foto.'; };
+    img.src = `data:${mime};base64,${b64}`;
+    // botão de alternância só quando as DUAS fotos existem
+    if (tog) {
+      if (f.img && f.img2) { tog.style.display = ''; tog.textContent = slot === 2 ? '◀ Ver foto 1' : 'Ver foto 2 ▶'; }
+      else tog.style.display = 'none';
+    }
+  }
+  function toggleFotoView() { mostrarFotoSlot(fotoView.cur === 2 ? 1 : 2); }
   function closeFoto() {
     document.getElementById('fotoOverlay').classList.remove('open');
     const img = document.getElementById('fotoFull');
     img.src = ''; img.style.display = 'none';
+    fotoView.data = null;
   }
 
   /* ══════════════════════════════════════════
@@ -1925,17 +2021,25 @@
       dados.turnoTeste = document.getElementById('f_turnoTeste').value || '';
     }
 
-    // ── FOTO DO MOTOR: estado final (nova / removida / mantida) ──
+    // ── FOTOS DO MOTOR: estado final de cada slot (nova / removida / mantida) ──
     const cloudMode = !!(window.Store && window.Store.mode === 'cloud');
-    let temFotoFinal;
-    if (motorFotoDirty)         temFotoFinal = true;                       // escolheu foto nova
-    else if (motorFotoRemovida) temFotoFinal = false;                      // removeu a existente
-    else                        temFotoFinal = editingId ? editTemFoto : false;  // manteve como estava
-    dados.temFoto = cloudMode ? !!temFotoFinal : false;    // flag leve no doc (vai no onSnapshot)
-    // guarda os dados da foto ANTES de clearForm limpar o estado
-    const _fotoNova   = motorFotoDirty ? motorFotoBase64 : null;
-    const _fotoMime   = motorFotoMime;
-    const _fotoApagar = motorFotoRemovida;
+    // 'set' = foto nova · 'del' = remover existente · 'keep' = manter como está · 'none' = sem foto
+    function slotFinal(slot) {
+      const st = FOTO[slot];
+      if (st.dirty)    return 'set';
+      if (st.removida) return 'del';
+      return (editingId && st.editTem) ? 'keep' : 'none';
+    }
+    const op1 = slotFinal(1), op2 = slotFinal(2);
+    // flags leves no doc do motor (vão no onSnapshot da lista)
+    dados.temFoto  = cloudMode ? (op1 === 'set' || op1 === 'keep') : false;
+    dados.temFoto2 = cloudMode ? (op2 === 'set' || op2 === 'keep') : false;
+    // snapshot das fotos ANTES de clearForm limpar o estado
+    const _fotoOps = {
+      1: { action: op1, base64: FOTO[1].base64, mime: FOTO[1].mime },
+      2: { action: op2, base64: FOTO[2].base64, mime: FOTO[2].mime }
+    };
+    const _fotosMudaram = ['set','del'].includes(op1) || ['set','del'].includes(op2);
 
     // trava o botão enquanto grava, pra não duplicar no clique duplo
     const btnSave = document.getElementById('btnSalvar');
@@ -1956,22 +2060,18 @@
         alvoId = await Store.add(dados);           // devolve o id do novo doc (modo nuvem)
       }
 
-      // ── persiste a FOTO do motor (doc separado /fotos/{id}), só na nuvem ──
+      // ── persiste as FOTOS do motor (doc separado /fotos/{id}), só na nuvem ──
       let fotoFalhou = false;
-      if (cloudMode && alvoId && window.FB) {
+      if (cloudMode && alvoId && window.FB && _fotosMudaram && typeof window.FB.savePhotos === 'function') {
         try {
-          if (_fotoNova && typeof window.FB.savePhoto === 'function') {
-            await window.FB.savePhoto(alvoId, _fotoNova, _fotoMime);
-          } else if (_fotoApagar && typeof window.FB.deletePhoto === 'function') {
-            await window.FB.deletePhoto(alvoId);
-          }
+          await window.FB.savePhotos(alvoId, _fotoOps);
         } catch (ef) {
-          console.error('[saveMotor] foto não salvou:', ef);
+          console.error('[saveMotor] fotos não salvaram:', ef);
           fotoFalhou = true;
         }
       }
 
-      if (fotoFalhou) flash('⚠ Motor salvo, mas a FOTO falhou. Edite o motor e tente a foto de novo.');
+      if (fotoFalhou) flash('⚠ Motor salvo, mas as FOTOS falharam. Edite o motor e tente de novo.');
       else            flash(editingIdWas ? '✓ Motor atualizado' : '✓ Motor cadastrado');
       clearForm();   // re-render + contagem são feitos pelo Store (onMotorsChanged)
     } catch (e) {
@@ -2174,7 +2274,7 @@
             ${si.key==='uso' && m.localAtual?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHtml(m.localAtual)}</div>`:''}
           </div>
           <div class="np-actions">
-            ${m.temFoto ? `<button class="btn btn-ghost btn-sm" onclick="verFoto('${m.id}')" title="Ver foto do motor">
+            ${(m.temFoto || m.temFoto2) ? `<button class="btn btn-ghost btn-sm" onclick="verFoto('${m.id}', ${m.temFoto ? 1 : 2})" title="Ver foto${m.temFoto && m.temFoto2 ? 's' : ''} do motor">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </button>` : ''}
             <button class="btn btn-ghost btn-sm" onclick="editMotor('${m.id}')" title="Editar">
@@ -2243,13 +2343,16 @@
     document.getElementById('f_dataTeste').value  = dtInput;
     document.getElementById('f_turnoTeste').value = (m.testado && m.turnoTeste) ? m.turnoTeste : '';
     toggleTestado(!!m.testado);
-    // foto do motor: NÃO baixa agora; só sinaliza que existe (ver / trocar / remover)
+    // fotos do motor: NÃO baixa agora; só sinaliza quais existem (ver / trocar / remover)
     resetFotoMotorUI();
-    editTemFoto = !!m.temFoto;
-    if (editTemFoto) {
-      document.getElementById('motorFotoExistente').style.display = 'flex';
-      document.getElementById('motorFotoHint').textContent = '📷 Este motor já tem foto. Use Câmera/Galeria para trocar, ou remova.';
-    }
+    FOTO[1].editTem = !!m.temFoto;
+    FOTO[2].editTem = !!m.temFoto2;
+    [1,2].forEach(slot => {
+      if (FOTO[slot].editTem) {
+        document.getElementById('motorFotoExistente'+slot).style.display = 'flex';
+        document.getElementById('motorFotoHint'+slot).textContent = '📷 Foto salva. Use Câmera/Galeria para trocar, ou remova.';
+      }
+    });
     editingId = id;                          // marca edição in-place
     setFormMode(true);
     switchTab('cadastro');
@@ -2591,11 +2694,32 @@
       return !!(window.Store && window.Store.mode === 'cloud');
     }
 
-    // ── FOTO DO MOTOR: doc separado /fotos/{motorId}, baixado sob demanda ──
-    async function savePhoto(motorId, base64, mime) {
-      await setDoc(doc(db, 'fotos', motorId), {
-        img: base64, mime: mime || 'image/jpeg', updatedTS: Date.now()
+    // ── FOTOS DO MOTOR: doc separado /fotos/{motorId}, baixado sob demanda ──
+    //   até 2 fotos no mesmo doc: img/mime (slot 1) e img2/mime2 (slot 2).
+    //   ops = { 1:{action,base64,mime}, 2:{...} } com action 'set'|'del'|'keep'|'none'.
+    //   O doc é sempre REESCRITO com o estado final; se não sobrar nenhuma foto,
+    //   o doc inteiro é apagado (as regras exigem pelo menos uma imagem).
+    async function savePhotos(motorId, ops) {
+      const ref = doc(db, 'fotos', motorId);
+      // só precisa ler o doc atual se algum slot vai ser MANTIDO
+      const needRead = (ops[1] && ops[1].action === 'keep') || (ops[2] && ops[2].action === 'keep');
+      let cur = {};
+      if (needRead) { const s = await getDoc(ref); cur = s.exists() ? s.data() : {}; }
+      const out = {};
+      const map = { 1: ['img','mime'], 2: ['img2','mime2'] };
+      [1,2].forEach(n => {
+        const o = ops[n]; if (!o) return;
+        const [k, mk] = map[n];
+        if (o.action === 'set')            { out[k] = o.base64; out[mk] = o.mime || 'image/jpeg'; }
+        else if (o.action === 'keep' && cur[k]) { out[k] = cur[k]; out[mk] = cur[mk] || 'image/jpeg'; }
+        // 'del' e 'none' → omite o campo (foto removida / inexistente)
       });
+      if (!out.img && !out.img2) {
+        await deleteDoc(ref);                 // nenhuma foto → remove o doc
+      } else {
+        out.updatedTS = Date.now();
+        await setDoc(ref, out);               // reescreve o doc com o estado final
+      }
     }
     async function getPhoto(motorId) {
       const s = await getDoc(doc(db, 'fotos', motorId));
@@ -2613,7 +2737,7 @@
       // não estiver configurado (transição sem quebrar nada)
       signIn: () => signInAnonymously(auth),
       ensureCloud,
-      savePhoto, getPhoto, deletePhoto
+      savePhotos, getPhoto, deletePhoto
     };
 
     // ao autenticar, assume o Store da nuvem, liga o tempo real e libera a tela

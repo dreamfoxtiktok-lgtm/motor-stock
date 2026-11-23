@@ -22,7 +22,7 @@ service cloud.firestore {
                                'redutora','reducao',
                                'status','localAtual','historico',
                                'testado','dataTeste','turnoTeste',
-                               'temFoto',
+                               'temFoto','temFoto2',
                                'createdAt','updatedAt','createdTS'])
         // obrigatórios
         && 'carcaca'  in d && d.carcaca  is string && d.carcaca.size()  >= 1 && d.carcaca.size()  <= 60
@@ -51,6 +51,7 @@ service cloud.firestore {
         // teste: testado (bool); dataTeste/turnoTeste (string) só quando testado = true
         && (!('testado'    in d) || d.testado is bool)
         && (!('temFoto'    in d) || d.temFoto is bool)
+        && (!('temFoto2'   in d) || d.temFoto2 is bool)
         && (!('dataTeste'  in d) || (d.dataTeste  is string && d.dataTeste.size()  <= 20))
         && (!('turnoTeste' in d) || (d.turnoTeste is string && d.turnoTeste.size() <= 20))
         && (!('createdAt'  in d) || (d.createdAt  is string && d.createdAt.size()  <= 20))
@@ -93,15 +94,20 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // FOTO DO MOTOR — 1 documento por motor (/fotos/{motorId}), guardado FORA do
-    // doc do motor pra não pesar a sincronização em tempo real da lista. A imagem
-    // vai como base64 (campo 'img'). O teto de ~1 MB respeita o limite de 1
-    // documento do Firestore; o app comprime pra ~700 KB antes de enviar.
+    // FOTOS DO MOTOR — 1 documento por motor (/fotos/{motorId}), guardado FORA do
+    // doc do motor pra não pesar a sincronização em tempo real da lista. Até 2
+    // imagens base64 no MESMO doc: 'img'/'mime' (foto 1) e 'img2'/'mime2' (foto 2).
+    // Cada foto é comprimida pra ~460 KB antes de enviar, de modo que as duas
+    // juntas caibam no limite de ~1 MB de um documento do Firestore.
+    // Exige pelo menos UMA das imagens (o app apaga o doc quando não sobra nenhuma).
     // ─────────────────────────────────────────────────────────────
     function fotoValida(d) {
-      return d.keys().hasOnly(['img','mime','updatedTS'])
-        && 'img'  in d && d.img  is string && d.img.size() >= 1 && d.img.size() <= 1000000
-        && (!('mime'      in d) || (d.mime is string && d.mime.size() <= 40))
+      return d.keys().hasOnly(['img','mime','img2','mime2','updatedTS'])
+        && ('img' in d || 'img2' in d)
+        && (!('img'  in d) || (d.img  is string && d.img.size()  >= 1 && d.img.size()  <= 520000))
+        && (!('img2' in d) || (d.img2 is string && d.img2.size() >= 1 && d.img2.size() <= 520000))
+        && (!('mime'  in d) || (d.mime  is string && d.mime.size()  <= 40))
+        && (!('mime2' in d) || (d.mime2 is string && d.mime2.size() <= 40))
         && (!('updatedTS' in d) || d.updatedTS is number);
     }
     match /fotos/{motorId} {
