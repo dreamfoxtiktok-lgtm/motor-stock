@@ -161,11 +161,11 @@
 
 <div class="main">
   <div class="filtros">
-    <select id="fPotencia" data-vazio onchange="renderResults()" aria-label="Filtrar por potência"><option value="">— Potência —</option></select>
-    <select id="fCarcaca"  data-vazio onchange="renderResults()" aria-label="Filtrar por carcaça"><option value="">— Carcaça —</option></select>
-    <select id="fRpm"      data-vazio onchange="renderResults()" aria-label="Filtrar por RPM"><option value="">— RPM —</option></select>
-    <select id="fEixo"     data-vazio onchange="renderResults()" aria-label="Filtrar por eixo"><option value="">— Eixo —</option></select>
-    <select id="fRedutora" data-vazio onchange="renderResults()" aria-label="Filtrar por redutora"><option value="">— Redutora —</option></select>
+    <select id="fPotencia" data-vazio onchange="onFiltroChange()" aria-label="Filtrar por potência"><option value="">— Potência —</option></select>
+    <select id="fCarcaca"  data-vazio onchange="onFiltroChange()" aria-label="Filtrar por carcaça"><option value="">— Carcaça —</option></select>
+    <select id="fRpm"      data-vazio onchange="onFiltroChange()" aria-label="Filtrar por RPM"><option value="">— RPM —</option></select>
+    <select id="fEixo"     data-vazio onchange="onFiltroChange()" aria-label="Filtrar por eixo"><option value="">— Eixo —</option></select>
+    <select id="fRedutora" data-vazio onchange="onFiltroChange()" aria-label="Filtrar por redutora"><option value="">— Redutora —</option></select>
   </div>
   <div class="filtros-acao">
     <span class="list-label" id="listLabel"></span>
@@ -246,18 +246,33 @@
   function onMotoresChanged(){ updateCount(); popularFiltros(); renderResults(); }
   function updateCount(){ const c=motores.length; document.getElementById('headerCount').textContent = c+' motor'+(c!==1?'es':''); }
 
-  /* ── FILTROS: listas suspensas populadas pelos valores REAIS dos motores ── */
-  // valores únicos de um campo, ordenados (numérico-ciente por padrão)
-  function distintos(getter, cmp){
+  /* ── FILTROS ENCADEADOS (faceted): cada lista mostra só os valores
+       compatíveis com os OUTROS filtros já escolhidos ── */
+  const _val = id => document.getElementById(id).value;
+
+  // motores que casam com TODOS os filtros ativos, EXCETO o facet 'exceto'
+  function motorsFiltrados(exceto){
+    const fp=_val('fPotencia'), fc=_val('fCarcaca'), fr=_val('fRpm'), fe=_val('fEixo'), fred=_val('fRedutora');
+    return motores.filter(m =>
+      (exceto==='fPotencia' || !fp || (m.potencia||'').trim()===fp) &&
+      (exceto==='fCarcaca'  || !fc || (m.carcaca ||'').trim()===fc) &&
+      (exceto==='fRpm'      || !fr || (m.rpm     ||'').trim()===fr) &&
+      (exceto==='fEixo'     || !fe || (m.eixo    ||'').trim()===fe) &&
+      (exceto==='fRedutora' || matchRedutora(m, fred))
+    );
+  }
+
+  // valores únicos de um campo numa lista, ordenados
+  function distintos(lista, getter, cmp){
     const set = new Set();
-    motores.forEach(m => { const v = getter(m); if (v!=null && String(v).trim()!=='') set.add(String(v).trim()); });
+    lista.forEach(m => { const v=getter(m); if (v!=null && String(v).trim()!=='') set.add(String(v).trim()); });
     return [...set].sort(cmp || ((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true,sensitivity:'base'})));
   }
   // potência ordenada por cv (lê o 1º número do rótulo "X cv / Y kW")
   const _cvDe = s => { const m=String(s).toLowerCase().replace(',', '.').match(/(\d+\.?\d*)/); return m?parseFloat(m[1]):Infinity; };
-  function distintosPot(){ return distintos(m=>m.potencia, (a,b)=>_cvDe(a)-_cvDe(b)); }
+  const cmpPot = (a,b)=>_cvDe(a)-_cvDe(b);
 
-  // (re)preenche um <select> mantendo a opção escolhida, se ainda existir
+  // (re)preenche um <select> mantendo a opção escolhida; reseta se ela sumiu
   function preencherSelect(id, valores, labelPadrao, extras){
     const sel = document.getElementById(id);
     const atual = sel.value;
@@ -265,21 +280,29 @@
     (extras||[]).forEach(e => { html += `<option value="${escapeHtml(e.v)}">${escapeHtml(e.l)}</option>`; });
     valores.forEach(v => { html += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`; });
     sel.innerHTML = html;
-    if ([...sel.options].some(o => o.value === atual)) sel.value = atual;
+    sel.value = [...sel.options].some(o => o.value === atual) ? atual : '';
   }
 
+  // cada lista é construída a partir do subconjunto filtrado pelas OUTRAS
   function popularFiltros(){
-    preencherSelect('fPotencia', distintosPot(),          '— Potência —');
-    preencherSelect('fCarcaca',  distintos(m=>m.carcaca), '— Carcaça —');
-    preencherSelect('fRpm',      distintos(m=>m.rpm),     '— RPM —');
-    preencherSelect('fEixo',     distintos(m=>m.eixo),    '— Eixo —');
-    preencherSelect('fRedutora', distintos(m=> m.redutora ? (m.reducao||'') : ''), '— Redutora —',
-                    [{v:'__com__',l:'Com redutora'},{v:'__sem__',l:'Sem redutora'}]);
+    preencherSelect('fPotencia', distintos(motorsFiltrados('fPotencia'), m=>m.potencia, cmpPot), '— Potência —');
+    preencherSelect('fCarcaca',  distintos(motorsFiltrados('fCarcaca'),  m=>m.carcaca),           '— Carcaça —');
+    preencherSelect('fRpm',      distintos(motorsFiltrados('fRpm'),      m=>m.rpm),               '— RPM —');
+    preencherSelect('fEixo',     distintos(motorsFiltrados('fEixo'),     m=>m.eixo),              '— Eixo —');
+    // redutora: opções conforme o subconjunto compatível
+    const subR = motorsFiltrados('fRedutora');
+    const extrasR = [];
+    if (subR.some(m=>m.redutora))  extrasR.push({v:'__com__', l:'Com redutora'});
+    if (subR.some(m=>!m.redutora)) extrasR.push({v:'__sem__', l:'Sem redutora'});
+    preencherSelect('fRedutora', distintos(subR.filter(m=>m.redutora), m=>m.reducao), '— Redutora —', extrasR);
   }
+
+  // mudou um filtro → re-encadeia as listas e re-renderiza
+  function onFiltroChange(){ popularFiltros(); renderResults(); }
 
   function limparFiltros(){
     ['fPotencia','fCarcaca','fRpm','fEixo','fRedutora'].forEach(id => { document.getElementById(id).value=''; });
-    renderResults();
+    onFiltroChange();
   }
 
   // redutora: '' = todos | __com__ | __sem__ | <reducao específica>
