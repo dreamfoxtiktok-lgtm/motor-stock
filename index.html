@@ -848,6 +848,18 @@
             </label>
           </div>
         </div>
+        <div class="form-row">
+          <div class="fg">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="f_redutora" onchange="toggleRedutora(this.checked)" style="width:17px;height:17px;cursor:pointer;">
+              <span>Motor tem redutora?</span>
+            </label>
+          </div>
+          <div class="fg" id="reducaoWrap" style="display:none">
+            <label>Redução *</label>
+            <input type="text" id="f_reducao" placeholder="ex: 1:30, 1/20" class="mec">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1412,6 +1424,8 @@
       { header:'Flange',          key:'flange', width:9  },
       { header:'Furos',           key:'furos',  width:8  },
       { header:'Base Fixação',    key:'base',   width:13 },
+      { header:'Redutora',        key:'red',    width:9  },
+      { header:'Redução',         key:'reducao',width:12 },
       { header:'Observações',     key:'obs',    width:34 },
       { header:'Cadastro',        key:'cad',    width:12 },
     ];
@@ -1445,6 +1459,8 @@
         flange: m.flange ? 'Sim' : 'Não',
         furos: (m.flange && m.flangeFuros != null) ? m.flangeFuros : '',
         base:  m.baseFixacao ? 'Sim' : 'Não',
+        red:   m.redutora ? 'Sim' : 'Não',
+        reducao: (m.redutora && m.reducao) ? m.reducao : '',
         obs:   m.obs || '',
         cad:   m.createdAt || '',
       });
@@ -1769,6 +1785,13 @@
     if (!checked) { const f = document.getElementById('f_flangeFuros'); if (f) f.value = ''; }
   }
 
+  // mostra/esconde o campo "Redução" conforme o checkbox de redutora
+  function toggleRedutora(checked) {
+    const wrap = document.getElementById('reducaoWrap');
+    if (wrap) wrap.style.display = checked ? 'block' : 'none';
+    if (!checked) { const f = document.getElementById('f_reducao'); if (f) f.value = ''; }
+  }
+
   // mostra/esconde os campos de teste (data + turno) conforme o checkbox "Motor foi testado?"
   function toggleTestado(checked) {
     const wrap = document.getElementById('testeWrap');
@@ -1869,6 +1892,10 @@
     const rpm = document.getElementById('f_rpm').value.trim();
     const flange      = document.getElementById('f_flange').checked;
     const baseFixacao = document.getElementById('f_baseFixacao').checked;
+    const redutora    = document.getElementById('f_redutora').checked;
+    const reducao     = redutora ? document.getElementById('f_reducao').value.trim() : '';
+    // redução é obrigatória quando o motor tem redutora
+    if (redutora && !reducao) { flash('⚠ Informe a Redução (ex.: 1:30) — o motor tem redutora'); return; }
     const dados = {
       tag,
       carcaca:   carcaca.toUpperCase(),
@@ -1880,8 +1907,9 @@
       eixo:      document.getElementById('f_eixo').value.trim(),
       obs:       document.getElementById('f_obs').value.trim(),
       endereco:  document.getElementById('f_endereco').value.trim(),
-      flange, baseFixacao,
+      flange, baseFixacao, redutora,
     };
+    if (redutora) dados.reducao = reducao;
     // flangeFuros: number, só quando "tem flange" está marcado e um valor válido foi informado
     if (flange) {
       const n = parseInt(document.getElementById('f_flangeFuros').value, 10);
@@ -2107,6 +2135,9 @@
           (m.obs||'').toLowerCase().includes(q)||
           (m.endereco||'').toLowerCase().includes(q)||
           (m.localAtual||'').toLowerCase().includes(q)||
+          (m.amp||'').toLowerCase().includes(q)||
+          (m.eixo||'').toLowerCase().includes(q)||
+          (m.redutora ? ('redutora redutor ' + (m.reducao||'')) : '').toLowerCase().includes(q)||
           (m.testado ? ('testado ' + (m.dataTeste||'') + ' ' + (m.turnoTeste||'')) : '').toLowerCase().includes(q)||
           ((m.flange ? ('flange ' + (m.flangeFuros!=null ? m.flangeFuros+' furos' : '')) : '') +
            (m.baseFixacao ? ' base de fixacao base fixação' : '')).toLowerCase().includes(q))
@@ -2172,6 +2203,7 @@
               <div class="np-row"><span class="np-lbl">Carcaça</span><span class="np-val">${escapeHtml(m.carcaca)}</span></div>
               <div class="np-row"><span class="np-lbl">Flange</span><span class="np-val">${m.flange ? (m.flangeFuros!=null ? escapeHtml(String(m.flangeFuros))+' furos' : 'sim') : 'não'}</span></div>
               <div class="np-row"><span class="np-lbl">Base fix.</span><span class="np-val">${m.baseFixacao ? 'sim' : 'não'}</span></div>
+              <div class="np-row"><span class="np-lbl">Redutora</span><span class="np-val${m.redutora?' mec-col':''}">${m.redutora ? (m.reducao ? escapeHtml(m.reducao) : 'sim') : 'não'}</span></div>
               <div class="np-row"><span class="np-lbl">Testado</span><span class="np-val${m.testado?' mec-col':''}">${escapeHtml(testeResumo(m))}</span></div>
             </div>
           </div>
@@ -2200,6 +2232,10 @@
     document.getElementById('f_baseFixacao').checked = !!m.baseFixacao;
     document.getElementById('f_flangeFuros').value   = (m.flange && m.flangeFuros!=null) ? m.flangeFuros : '';
     toggleFlange(!!m.flange);
+    // redutora / redução
+    document.getElementById('f_redutora').checked = !!m.redutora;
+    document.getElementById('f_reducao').value    = (m.redutora && m.reducao) ? m.reducao : '';
+    toggleRedutora(!!m.redutora);
     // campos de teste
     document.getElementById('f_testado').checked = !!m.testado;
     let dtInput = '';
@@ -2250,6 +2286,9 @@
     document.getElementById('f_baseFixacao').checked = false;
     document.getElementById('f_flangeFuros').value = '';
     toggleFlange(false);
+    document.getElementById('f_redutora').checked = false;
+    document.getElementById('f_reducao').value = '';
+    toggleRedutora(false);
     document.getElementById('f_testado').checked = false;
     document.getElementById('f_dataTeste').value = '';
     document.getElementById('f_turnoTeste').value = '';
@@ -2508,6 +2547,8 @@
         const payload = { ...data, updatedAt: new Date().toLocaleDateString('pt-BR') };
         // ao desmarcar flange, remove flangeFuros do documento pra não deixar dado órfão
         if (data.flange === false) payload.flangeFuros = deleteField();
+        // ao desmarcar redutora, remove reducao do documento
+        if (data.redutora === false) payload.reducao = deleteField();
         // ao desmarcar "testado", remove dataTeste/turnoTeste do documento
         if (data.testado === false) { payload.dataTeste = deleteField(); payload.turnoTeste = deleteField(); }
 

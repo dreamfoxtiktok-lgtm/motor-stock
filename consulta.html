@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Motor Stock — Consulta</title>
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sharetechmono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="manifest" href="/manifest-consulta.json">
+<meta name="theme-color" content="#1a2744">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<style>
+  @font-face {
+    font-family: 'Inter'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/fonts/inter-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Inter'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+  @font-face {
+    font-family: 'Share Tech Mono'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/fonts/sharetechmono-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+
+  :root {
+    --yellow:#f5c518; --danger:#e05252; --success:#2ecc7a; --elec:#4fa3e0; --mec:#5ecf8a; --ai:#b57bee; --radius:6px;
+    --navy:#1a2744; --navy-mid:#243358; --navy-light:#2e4070; --muted:#99a3b8; --white:#f0f4ff;
+    --bg:#0f1724; --card-bg:#151f33; --input-bg:#0d1526; --input-ph:#3a4560; --footer-bg:rgba(0,0,0,.2);
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); color-scheme:dark;
+  }
+  :root[data-theme="light"] {
+    --navy:#e9edf5; --navy-mid:#dfe4ee; --navy-light:#c7cfde; --muted:#5a6478; --white:#1a2744;
+    --bg:#f4f6fb; --card-bg:#ffffff; --input-bg:#f0f3f9; --input-ph:#a8b0c0; --footer-bg:rgba(0,0,0,.03); color-scheme:light;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --navy:#e9edf5; --navy-mid:#dfe4ee; --navy-light:#c7cfde; --muted:#5a6478; --white:#1a2744;
+      --bg:#f4f6fb; --card-bg:#ffffff; --input-bg:#f0f3f9; --input-ph:#a8b0c0; --footer-bg:rgba(0,0,0,.03); color-scheme:light;
+    }
+  }
+
+  *, *::before, *::after { box-sizing:inherit; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); min-height:100vh; color:var(--white); transition:background .2s,color .2s; }
+  *:focus-visible { outline:2px solid var(--yellow); outline-offset:2px; border-radius:3px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.001ms!important; transition-duration:.001ms!important; } }
+
+  header {
+    background:var(--navy); border-bottom:3px solid var(--yellow);
+    padding:13px 20px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:env(safe-area-inset-top,0); z-index:100;
+  }
+  .logo { display:flex; align-items:center; gap:10px; }
+  .logo-icon { width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .logo-icon img { width:100%; height:100%; object-fit:cover; display:block; }
+  .logo-text h1 { font-size:clamp(13px,2.8vw,15px); font-weight:700; letter-spacing:0.05em; }
+  .logo-text span { font-size:10px; color:var(--muted); font-family:'Share Tech Mono',monospace; }
+  .header-count { background:var(--navy-mid); border:1px solid var(--navy-light); border-radius:20px; padding:4px 12px; font-size:12px; color:var(--yellow); font-family:'Share Tech Mono',monospace; white-space:nowrap; }
+  .theme-toggle {
+    width:32px; height:32px; border-radius:50%; background:var(--navy-mid); border:1px solid var(--navy-light);
+    color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:color .15s,border-color .15s;
+  }
+  .theme-toggle:hover { color:var(--yellow); border-color:var(--yellow); }
+
+  .main { max-width:720px; margin:0 auto; padding:16px 14px calc(40px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:12px; }
+
+  /* busca */
+  .busca-bar { display:flex; gap:8px; flex-wrap:wrap; }
+  .busca-campo { background:var(--card-bg); border:1px solid var(--navy-light); border-radius:var(--radius); color:var(--white); font-size:13px; font-family:'Inter',sans-serif; padding:10px 10px; outline:none; cursor:pointer; flex:0 0 auto; }
+  .busca-campo:focus { border-color:var(--yellow); }
+  .search-wrap { position:relative; flex:1 1 180px; }
+  .search-wrap input { width:100%; background:var(--card-bg); border:1px solid var(--navy-light); border-radius:var(--radius); color:var(--white); font-size:13px; font-family:'Inter',sans-serif; padding:10px 12px 10px 36px; outline:none; transition:border-color .15s; }
+  .search-wrap input:focus { border-color:var(--yellow); }
+  .search-wrap input::placeholder { color:var(--muted); }
+  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+  .list-label { font-size:11px; color:var(--muted); font-family:'Share Tech Mono',monospace; padding:0 2px; }
+
+  /* botões */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:5px 11px; border:none; border-radius:var(--radius); font-size:11px; font-weight:700; cursor:pointer; transition:opacity .15s,transform .1s; font-family:'Inter',sans-serif; letter-spacing:0.03em; }
+  .btn:active { transform:scale(.97); }
+  .btn-primary { background:var(--yellow); color:var(--navy); padding:10px 18px; font-size:13px; }
+  .btn-ghost { background:transparent; border:1px solid var(--navy-light); color:var(--muted); min-width:44px; min-height:40px; }
+  .btn-ghost:hover { border-color:var(--muted); color:var(--white); }
+
+  /* nameplate card (read-only) */
+  .nameplate { background:var(--card-bg); border:1px solid var(--navy-light); border-radius:8px; overflow:hidden; transition:border-color .2s; }
+  .nameplate:hover { border-color:rgba(245,197,24,.3); }
+  .np-identity { background:var(--navy-mid); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--navy-light); gap:8px; }
+  .np-id-left { display:flex; flex-direction:column; gap:2px; }
+  .np-id-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .np-tag { font-family:'Share Tech Mono',monospace; font-size:12px; font-weight:700; color:var(--yellow); background:rgba(245,197,24,.12); border:1px solid rgba(245,197,24,.3); padding:2px 8px; border-radius:3px; letter-spacing:0.06em; }
+  .np-carcaca { font-size:16px; font-weight:700; color:var(--white); letter-spacing:0.05em; }
+  .np-fabricante { font-size:11px; color:var(--muted); font-family:'Share Tech Mono',monospace; margin-top:1px; }
+  .np-status { display:inline-flex; align-items:center; gap:5px; font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:3px; border:1px solid; }
+  .np-status .sdot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .np-local { display:flex; align-items:center; gap:5px; margin-top:4px; font-size:11px; color:var(--muted); font-family:'Share Tech Mono',monospace; }
+  .np-local svg { width:12px; height:12px; color:var(--yellow); flex-shrink:0; }
+  .np-panels { display:grid; grid-template-columns:1fr 1fr; }
+  .np-panel { padding:10px 14px 12px; }
+  .np-panel + .np-panel { border-left:1px solid var(--navy-light); }
+  .np-panel-title { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .np-panel-title .dot { width:6px; height:6px; border-radius:50%; }
+  .dot-elec { background:var(--elec); } .dot-mec { background:var(--mec); }
+  .np-panel-title span { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+  .np-panel-title span.elec { color:var(--elec); } .np-panel-title span.mec { color:var(--mec); }
+  .np-row { display:flex; align-items:baseline; justify-content:space-between; gap:6px; }
+  .np-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; flex-shrink:0; }
+  .np-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--white); text-align:right; }
+  .np-val.hi { color:var(--yellow); font-weight:700; }
+  .np-val.elec-col { color:var(--elec); } .np-val.mec-col { color:var(--mec); }
+  .np-polo-badge { display:inline-block; background:rgba(79,163,224,.12); border:1px solid rgba(79,163,224,.25); color:var(--elec); font-size:10px; font-family:'Share Tech Mono',monospace; padding:1px 5px; border-radius:3px; margin-left:4px; }
+  .np-actions { display:flex; gap:6px; }
+  .np-footer { padding:6px 14px; background:var(--footer-bg); border-top:1px solid var(--navy-light); display:flex; align-items:center; justify-content:space-between; }
+  .np-obs { font-size:11px; color:var(--muted); font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%; }
+  .np-date { font-family:'Share Tech Mono',monospace; font-size:10px; color:#4a5570; }
+  @media (max-width:520px) { .np-panels { grid-template-columns:1fr; } .np-panel + .np-panel { border-left:none; border-top:1px solid var(--navy-light); } }
+
+  .empty { padding:40px 20px; text-align:center; color:var(--muted); }
+  .empty svg { width:44px; height:44px; margin-bottom:12px; opacity:.3; }
+  .empty p { font-size:13px; line-height:1.6; }
+
+  .toast { position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%) translateY(120px); background:var(--success); color:#0d2a1a; font-size:13px; font-weight:700; padding:10px 18px; border-radius:16px; z-index:999; transition:transform .25s ease; max-width:min(92vw,440px); text-align:center; box-shadow:0 6px 20px rgba(0,0,0,.28); }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  .foto-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:1200; display:none; align-items:center; justify-content:center; padding:16px; }
+  .foto-overlay.open { display:flex; }
+  .foto-box { position:relative; max-width:96vw; max-height:92vh; display:flex; align-items:center; justify-content:center; }
+  .foto-box img { max-width:96vw; max-height:92vh; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,.5); }
+  .foto-close { position:absolute; top:-6px; right:-6px; width:34px; height:34px; border-radius:50%; border:0; background:#fff; color:#1a2744; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.4); z-index:2; }
+  .foto-loading { color:#f0f4ff; font-size:13px; font-weight:600; padding:24px; }
+
+  .lock-overlay { display:none; position:fixed; inset:0; z-index:500; background:var(--bg); align-items:center; justify-content:center; padding:20px; }
+  .lock-box { background:var(--card-bg); border:1px solid var(--navy-light); border-radius:12px; padding:32px 26px; max-width:320px; width:100%; text-align:center; }
+  .lock-box .lock-logo { width:54px; height:54px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+  .lock-box .lock-logo img { width:100%; height:100%; object-fit:cover; display:block; }
+  .lock-box h2 { font-size:clamp(16px,4.5vw,19px); font-weight:700; letter-spacing:0.04em; margin-bottom:4px; }
+  .lock-box p { font-size:12px; color:var(--muted); margin-bottom:20px; }
+  .lock-box input { width:100%; background:var(--input-bg); border:1px solid var(--navy-light); border-radius:var(--radius); color:var(--white); font-size:14px; padding:11px 14px; outline:none; text-align:center; }
+  .lock-box input:focus { border-color:var(--yellow); box-shadow:0 0 0 2px rgba(245,197,24,.12); }
+  .lock-msg { font-size:12px; color:var(--danger); min-height:16px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"><img src="/icons/icon-192.png" alt="Motor Stock" width="34" height="34"></div>
+    <div class="logo-text"><h1>MOTOR STOCK</h1><span>Consulta de Motores</span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema">
+      <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <div class="header-count" id="headerCount">0 motores</div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="busca-bar">
+    <select class="busca-campo" id="campoBusca" onchange="onBusca()" aria-label="Buscar por campo">
+      <option value="tudo">Tudo</option>
+      <option value="carcaca">Carcaça</option>
+      <option value="potencia">Potência</option>
+      <option value="rpm">RPM</option>
+      <option value="amp">Amperagem</option>
+      <option value="eixo">Eixo</option>
+      <option value="redutora">Redutora</option>
+    </select>
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Buscar motor..." oninput="onBusca()" autocomplete="off">
+    </div>
+  </div>
+  <div class="list-label" id="listLabel"></div>
+  <div id="motorList"></div>
+</div>
+
+<!-- visualizador de foto -->
+<div class="foto-overlay" id="fotoOverlay" onclick="if(event.target===this)closeFoto()">
+  <div class="foto-box">
+    <button class="foto-close" onclick="closeFoto()" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="foto-loading" id="fotoLoading">Carregando foto…</div>
+    <img id="fotoFull" src="" alt="Foto do motor" style="display:none">
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- tela de senha -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-logo"><img src="/icons/icon-192.png" alt="Motor Stock"></div>
+    <h2>Consulta de Motores</h2>
+    <p>Digite a senha da equipe para consultar o estoque.</p>
+    <input type="password" id="lockPass" placeholder="senha da equipe" autocomplete="off" onkeydown="if(event.key==='Enter') tentarLogin()">
+    <button class="btn btn-primary" id="lockBtn" style="width:100%;margin-top:12px;" onclick="tentarLogin()">Entrar</button>
+    <div class="lock-msg" id="lockMsg"></div>
+  </div>
+</div>
+
+<script>
+  var motores = [];               // window.motores — o módulo Firebase popula
+  let toastTimer, _searchTimer;
+
+  const escapeHtml = s => s==null ? '' : String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  const STATUS = {
+    estoque:  { key:'estoque',  label:'Em estoque',  color:'var(--success)', bg:'rgba(46,204,122,.12)', border:'rgba(46,204,122,.4)' },
+    uso:      { key:'uso',      label:'Em uso',      color:'var(--yellow)',  bg:'rgba(245,197,24,.12)', border:'rgba(245,197,24,.4)' },
+    conserto: { key:'conserto', label:'Em conserto', color:'var(--danger)',  bg:'rgba(224,82,82,.12)',  border:'rgba(224,82,82,.45)' },
+  };
+  const statusInfo = m => STATUS[m && m.status] || STATUS.estoque;
+
+  function getPolos(rpm){
+    const r = parseFloat((rpm||'').replace(',','.'));
+    if (!r || r<=0) return '';
+    const map=[{s:3600,p:2},{s:1800,p:4},{s:1200,p:6},{s:900,p:8},{s:720,p:10},{s:600,p:12}];
+    let best=null,bd=Infinity;
+    for(const f of map){ const d=Math.abs(f.s-r); if(d<bd && r<f.s*1.02){bd=d;best=f;} }
+    return best ? best.p+'P' : '';
+  }
+
+  /* TEMA */
+  function applyTheme(theme){
+    if (theme==='light'||theme==='dark') document.documentElement.setAttribute('data-theme', theme);
+    else document.documentElement.removeAttribute('data-theme');
+    const isLight = theme==='light' || (!theme && matchMedia('(prefers-color-scheme: light)').matches);
+    document.querySelector('.icon-moon').style.display = isLight ? 'none'  : 'block';
+    document.querySelector('.icon-sun').style.display  = isLight ? 'block' : 'none';
+  }
+  function toggleTheme(){
+    const cur = document.documentElement.getAttribute('data-theme');
+    const isLight = cur==='light' || (!cur && matchMedia('(prefers-color-scheme: light)').matches);
+    const next = isLight ? 'dark' : 'light';
+    try { localStorage.setItem('ms_theme', next); } catch {}
+    applyTheme(next);
+  }
+  (function(){ let t=null; try { t=localStorage.getItem('ms_theme'); } catch {} applyTheme(t||''); })();
+
+  function flash(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+  }
+
+  function onMotoresChanged(){ updateCount(); renderResults(); }
+  function updateCount(){ const c=motores.length; document.getElementById('headerCount').textContent = c+' motor'+(c!==1?'es':''); }
+
+  function onBusca(){ clearTimeout(_searchTimer); _searchTimer=setTimeout(renderResults,160); }
+
+  // casa um motor com a busca, conforme o campo escolhido
+  function matchCampo(m, campo, q){
+    if (campo==='redutora'){
+      if (!q) return !!m.redutora;                                   // só com redutora
+      return !!m.redutora && ('redutora redutor '+(m.reducao||'')).toLowerCase().includes(q);
+    }
+    if (!q) return true;
+    const mapa = {
+      carcaca:  [m.carcaca],
+      potencia: [m.potencia],
+      rpm:      [m.rpm, m.polos || getPolos(m.rpm)],
+      amp:      [m.amp],
+      eixo:     [m.eixo],
+    };
+    if (campo in mapa) return mapa[campo].filter(Boolean).join(' ').toLowerCase().includes(q);
+    // "tudo"
+    return [m.tag,m.carcaca,m.fabricante,m.potencia,m.rpm,m.polos,m.amp,m.eixo,m.obs,m.endereco,
+            (m.redutora?('redutora '+(m.reducao||'')):'')].filter(Boolean).join(' ').toLowerCase().includes(q);
+  }
+
+  function renderResults(){
+    const campo = document.getElementById('campoBusca').value;
+    const q = (document.getElementById('searchInput').value||'').trim().toLowerCase();
+    const filtrar = !(campo==='tudo' && !q) && !(campo!=='redutora' && !q);
+    const filtered = filtrar ? motores.filter(m => matchCampo(m, campo, q)) : motores;
+
+    const lbl = document.getElementById('listLabel');
+    const n = filtered.length;
+    lbl.textContent = n ? `${n} motor${n!==1?'es':''} ${(q||campo==='redutora')?'encontrado'+(n!==1?'s':''):'no estoque'}` : '';
+
+    const list = document.getElementById('motorList');
+    if (!filtered.length){
+      const campoNome = {tudo:'',carcaca:'carcaça',potencia:'potência',rpm:'RPM',amp:'amperagem',eixo:'eixo',redutora:'redutora'}[campo]||'';
+      list.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <p>${ q ? 'Nenhum motor para "'+escapeHtml(q)+'"'+(campoNome?(' em '+campoNome):'') : (campo==='redutora'?'Nenhum motor com redutora.':'Nenhum motor cadastrado ainda.') }</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(m => {
+      const tagLabel = escapeHtml(m.tag || ('#'+String(motores.indexOf(m)+1).padStart(3,'0')));
+      const si = statusInfo(m);
+      return `
+      <div class="nameplate">
+        <div class="np-identity">
+          <div class="np-id-left">
+            <div class="np-id-top">
+              <span class="np-tag">${tagLabel}</span>
+              <span class="np-carcaca">${escapeHtml(m.carcaca)}</span>
+              <span class="np-status" style="color:${si.color};border-color:${si.border};background:${si.bg}"><span class="sdot"></span>${si.label}</span>
+            </div>
+            ${m.fabricante?`<div class="np-fabricante">${escapeHtml(m.fabricante)}</div>`:''}
+            ${m.endereco?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>${escapeHtml(m.endereco)}</div>`:''}
+            ${si.key==='uso' && m.localAtual?`<div class="np-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHtml(m.localAtual)}</div>`:''}
+          </div>
+          ${m.temFoto?`<div class="np-actions"><button class="btn btn-ghost" onclick="verFoto('${m.id}')" title="Ver foto do motor">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button></div>`:''}
+        </div>
+        <div class="np-panels">
+          <div class="np-panel">
+            <div class="np-panel-title"><div class="dot dot-elec"></div><span class="elec">Elétrico</span></div>
+            <div class="np-fields">
+              <div class="np-row"><span class="np-lbl">Potência</span><span class="np-val hi">${escapeHtml(m.potencia)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Amperagem</span><span class="np-val elec-col">${escapeHtml(m.amp)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Fat. Serviço</span><span class="np-val">${escapeHtml(m.fs)||'—'}</span></div>
+            </div>
+          </div>
+          <div class="np-panel">
+            <div class="np-panel-title"><div class="dot dot-mec"></div><span class="mec">Mecânico</span></div>
+            <div class="np-fields">
+              <div class="np-row"><span class="np-lbl">RPM</span><span class="np-val mec-col">${escapeHtml(m.rpm)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Polos</span><span class="np-val">${(()=>{ const p=m.polos||getPolos(m.rpm); return p?`<span class="np-polo-badge">${escapeHtml(p)}</span>`:'—'; })()}</span></div>
+              <div class="np-row"><span class="np-lbl">Eixo (Ø)</span><span class="np-val">${escapeHtml(m.eixo)||'—'}</span></div>
+              <div class="np-row"><span class="np-lbl">Carcaça</span><span class="np-val">${escapeHtml(m.carcaca)}</span></div>
+              <div class="np-row"><span class="np-lbl">Flange</span><span class="np-val">${m.flange ? (m.flangeFuros!=null ? escapeHtml(String(m.flangeFuros))+' furos' : 'sim') : 'não'}</span></div>
+              <div class="np-row"><span class="np-lbl">Redutora</span><span class="np-val${m.redutora?' mec-col':''}">${m.redutora ? (m.reducao ? escapeHtml(m.reducao) : 'sim') : 'não'}</span></div>
+            </div>
+          </div>
+        </div>
+        ${m.obs?`<div class="np-footer"><span class="np-obs">📝 ${escapeHtml(m.obs)}</span></div>`:''}
+      </div>`;
+    }).join('');
+  }
+
+  /* VISUALIZADOR DE FOTO (sob demanda) */
+  async function verFoto(id){
+    if (!id) return;
+    const ov=document.getElementById('fotoOverlay'), img=document.getElementById('fotoFull'), load=document.getElementById('fotoLoading');
+    img.style.display='none'; img.src=''; load.style.display=''; load.textContent='Carregando foto…';
+    ov.classList.add('open');
+    try {
+      if (!(window.FB && window.FB.getPhoto)) { load.textContent='Foto indisponível.'; return; }
+      const f = await window.FB.getPhoto(id);
+      if (!f || !f.img) { load.textContent='Foto não encontrada.'; return; }
+      img.onload=()=>{ load.style.display='none'; img.style.display=''; };
+      img.onerror=()=>{ load.textContent='Falha ao exibir a foto.'; };
+      img.src=`data:${f.mime||'image/jpeg'};base64,${f.img}`;
+    } catch(e){ console.error('[verFoto]',e); load.textContent='Erro ao carregar a foto.'; }
+  }
+  function closeFoto(){
+    document.getElementById('fotoOverlay').classList.remove('open');
+    const img=document.getElementById('fotoFull'); img.src=''; img.style.display='none';
+  }
+
+  /* LOGIN (senha da equipe → custom token) */
+  async function tentarLogin(){
+    const pass=document.getElementById('lockPass').value;
+    const msg=document.getElementById('lockMsg'), btn=document.getElementById('lockBtn');
+    if (!pass){ msg.textContent='Digite a senha.'; return; }
+    btn.disabled=true; msg.textContent='Verificando...';
+    try {
+      const r = await fetch('/api/verifica-senha', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({senha:pass}) });
+      const data = await r.json().catch(()=>({}));
+      if (r.ok && data.ok){
+        try { sessionStorage.setItem('ms_auth','1'); } catch {}
+        if (data.token) await window.FB.signInToken(data.token);
+        else await window.FB.signIn();
+        document.getElementById('lockOverlay').style.display='none';
+      } else if (r.status===429 || data.bloqueado){
+        const min=Math.max(1, Math.ceil((data.retryEm||600)/60));
+        msg.textContent=`Muitas tentativas. Tente de novo em ~${min} min.`; btn.disabled=false;
+      } else {
+        const rest=(typeof data.restantes==='number')?` (${data.restantes} restantes)`:'';
+        msg.textContent='Senha incorreta.'+rest; btn.disabled=false;
+      }
+    } catch(e){ msg.textContent='Erro de conexão. Tente de novo.'; btn.disabled=false; }
+  }
+
+  /* PWA */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(console.error));
+  }
+</script>
+
+<script type="module">
+  import { initializeApp } from '/vendor/firebase/firebase-app.js';
+  import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+           collection, query, orderBy, onSnapshot, doc, getDoc, enableNetwork } from '/vendor/firebase/firebase-firestore.js';
+  import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged } from '/vendor/firebase/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAoIiZQtrR22UwbhK7fttnk5saC2jxzcNA",
+    authDomain:        "motor-stock-4c131.firebaseapp.com",
+    projectId:         "motor-stock-4c131",
+    storageBucket:     "motor-stock-4c131.firebasestorage.app",
+    messagingSenderId: "132287078444",
+    appId:             "1:132287078444:web:d9083baf916ebc6264f189"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  let cacheSettings = {};
+  try { cacheSettings = { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }; } catch {}
+  const db = initializeFirestore(app, cacheSettings);
+  const auth = getAuth(app);
+  const col = collection(db, 'motores');
+
+  async function ensureAuth(){ if (!auth.currentUser) await signInAnonymously(auth); return auth.currentUser; }
+
+  let _unsub=null, _retry=null, _wired=false;
+  function subscribe(){
+    if (_unsub){ try{_unsub();}catch{} _unsub=null; }
+    const q = query(col, orderBy('createdTS','desc'));
+    _unsub = onSnapshot(q, snap => {
+      if (_retry){ clearTimeout(_retry); _retry=null; }
+      window.motores = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      onMotoresChanged();
+    }, err => {
+      const code = (err && err.code) || '';
+      console.error('[Firestore] onSnapshot:', code || err);
+      if (code === 'permission-denied'){
+        try { signOut(auth); } catch {}
+        try { sessionStorage.removeItem('ms_auth'); } catch {}
+        if (_unsub){ try{_unsub();}catch{} _unsub=null; }
+        const ov=document.getElementById('lockOverlay'); if (ov) ov.style.display='flex';
+        if (window.flash) window.flash('🔒 Entre novamente com a senha da equipe.');
+        setTimeout(()=>document.getElementById('lockPass')?.focus(),100);
+        return;
+      }
+      resub(2000);
+    });
+  }
+  function resub(delay=500){
+    if (_retry) return;
+    _retry = setTimeout(async () => {
+      _retry=null;
+      try { await enableNetwork(db); } catch {}
+      try { await ensureAuth(); } catch {}
+      subscribe();
+    }, delay);
+  }
+  function wire(){
+    if (_wired) return; _wired=true;
+    window.addEventListener('online', ()=>resub(300));
+    document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') resub(300); });
+  }
+
+  window.FB = {
+    configured: true,
+    signInToken: (t)=>signInWithCustomToken(auth, t),
+    signIn: ()=>signInAnonymously(auth),
+    async getPhoto(id){ const s = await getDoc(doc(db,'fotos',id)); return s.exists()? s.data() : null; }
+  };
+
+  onAuthStateChanged(auth, user => {
+    if (user){
+      subscribe(); wire();
+      try { sessionStorage.setItem('ms_auth','1'); } catch {}
+      const ov=document.getElementById('lockOverlay'); if (ov) ov.style.display='none';
+    }
+  });
+
+  // tela de senha: sessão é restaurada sozinha (custom token). Esconde otimista; se não voltar em 5s, pede senha.
+  const overlay = document.getElementById('lockOverlay');
+  if (sessionStorage.getItem('ms_auth')==='1'){
+    if (overlay) overlay.style.display='none';
+    setTimeout(()=>{ if (!auth.currentUser && overlay){ overlay.style.display='flex'; document.getElementById('lockPass')?.focus(); } }, 5000);
+  } else if (overlay){
+    overlay.style.display='flex';
+    setTimeout(()=>document.getElementById('lockPass')?.focus(),100);
+  }
+</script>
+</body>
+</html>

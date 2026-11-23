@@ -1,7 +1,9 @@
-const CACHE_NAME = 'motor-stock-v27';  // ⚠ INCREMENTAR a cada novo deploy
+const CACHE_NAME = 'motor-stock-v29';  // ⚠ INCREMENTAR a cada novo deploy
 const ASSETS = [
   '/index.html',
+  '/consulta.html',
   '/manifest.json',
+  '/manifest-consulta.json',
   '/lib/chart.umd.min.js',
   '/lib/exceljs.min.js',
   '/icons/icon-192.png',
@@ -52,12 +54,12 @@ self.addEventListener('fetch', e => {
 
   // NAVEGAÇÃO (abrir o app — inclusive o PWA INSTALADO): tenta a rede para
   // pegar a versão mais nova; se a rede falhar (offline/instável), entrega a
-  // tela inicial em cache. Isso evita o erro "Não é possível acessar esse site"
-  // quando o app instalado é aberto sem rede ou com conexão instável.
+  // PÁGINA PEDIDA em cache (ex.: /consulta.html), caindo pra /index.html só se
+  // ela não estiver cacheada. Evita o erro "Não é possível acessar esse site".
   if (request.mode === 'navigate') {
     e.respondWith(
       fetch(request).catch(() =>
-        caches.match('/index.html').then(r => r || caches.match(request))
+        caches.match(request).then(r => r || caches.match('/index.html'))
       )
     );
     return;

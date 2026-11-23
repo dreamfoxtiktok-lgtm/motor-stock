@@ -19,6 +19,7 @@ service cloud.firestore {
       return d.keys().hasOnly(['tag','carcaca','fabricante','potencia','amp','fs',
                                'rpm','polos','eixo','obs','endereco',
                                'flange','flangeFuros','baseFixacao',
+                               'redutora','reducao',
                                'status','localAtual','historico',
                                'testado','dataTeste','turnoTeste',
                                'temFoto',
@@ -40,6 +41,9 @@ service cloud.firestore {
         && (!('flange'      in d) || d.flange      is bool)
         && (!('baseFixacao' in d) || d.baseFixacao is bool)
         && (!('flangeFuros' in d) || (d.flangeFuros is number && d.flangeFuros >= 0 && d.flangeFuros <= 100))
+        // redutora (boolean) e redução (string, ex.: "1:30")
+        && (!('redutora'   in d) || d.redutora is bool)
+        && (!('reducao'    in d) || (d.reducao   is string && d.reducao.size()   <= 40))
         // movimentação/status: status (string), localAtual (string), historico (array)
         && (!('status'     in d) || (d.status     is string && d.status.size()     <= 20))
         && (!('localAtual' in d) || (d.localAtual is string && d.localAtual.size() <= 120))

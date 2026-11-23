@@ -1,0 +1,16 @@
+{
+  "name": "Motor Stock — Consulta",
+  "short_name": "Consulta Motores",
+  "description": "Consulta e busca de motores cadastrados",
+  "id": "/consulta.html",
+  "start_url": "/consulta.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1724",
+  "theme_color": "#1a2744",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
