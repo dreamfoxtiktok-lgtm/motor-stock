@@ -67,16 +67,16 @@
 
   .main { max-width:720px; margin:0 auto; padding:16px 14px calc(40px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:12px; }
 
-  /* busca */
-  .busca-bar { display:flex; gap:8px; flex-wrap:wrap; }
-  .busca-campo { background:var(--card-bg); border:1px solid var(--navy-light); border-radius:var(--radius); color:var(--white); font-size:13px; font-family:'Inter',sans-serif; padding:10px 10px; outline:none; cursor:pointer; flex:0 0 auto; }
-  .busca-campo:focus { border-color:var(--yellow); }
-  .search-wrap { position:relative; flex:1 1 180px; }
-  .search-wrap input { width:100%; background:var(--card-bg); border:1px solid var(--navy-light); border-radius:var(--radius); color:var(--white); font-size:13px; font-family:'Inter',sans-serif; padding:10px 12px 10px 36px; outline:none; transition:border-color .15s; }
-  .search-wrap input:focus { border-color:var(--yellow); }
-  .search-wrap input::placeholder { color:var(--muted); }
-  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+  /* filtros (listas suspensas) */
+  .filtros { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+  .filtros select { width:100%; background:var(--card-bg); border:1px solid var(--navy-light); border-radius:var(--radius); color:var(--white); font-size:13px; font-family:'Inter',sans-serif; padding:10px 8px; outline:none; cursor:pointer; }
+  .filtros select:focus { border-color:var(--yellow); }
+  .filtros select:not([data-vazio]) { border-color:var(--yellow); color:var(--yellow); }
+  .filtros-acao { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:22px; }
   .list-label { font-size:11px; color:var(--muted); font-family:'Share Tech Mono',monospace; padding:0 2px; }
+  .prompt-busca { padding:40px 20px; text-align:center; color:var(--muted); }
+  .prompt-busca svg { width:42px; height:42px; opacity:.3; margin-bottom:12px; }
+  .prompt-busca p { font-size:13px; line-height:1.7; }
 
   /* botões */
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:5px 11px; border:none; border-radius:var(--radius); font-size:11px; font-weight:700; cursor:pointer; transition:opacity .15s,transform .1s; font-family:'Inter',sans-serif; letter-spacing:0.03em; }
@@ -160,22 +160,17 @@
 </header>
 
 <div class="main">
-  <div class="busca-bar">
-    <select class="busca-campo" id="campoBusca" onchange="onBusca()" aria-label="Buscar por campo">
-      <option value="tudo">Tudo</option>
-      <option value="carcaca">Carcaça</option>
-      <option value="potencia">Potência</option>
-      <option value="rpm">RPM</option>
-      <option value="amp">Amperagem</option>
-      <option value="eixo">Eixo</option>
-      <option value="redutora">Redutora</option>
-    </select>
-    <div class="search-wrap">
-      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input type="text" id="searchInput" placeholder="Buscar motor..." oninput="onBusca()" autocomplete="off">
-    </div>
+  <div class="filtros">
+    <select id="fPotencia" data-vazio onchange="renderResults()" aria-label="Filtrar por potência"><option value="">— Potência —</option></select>
+    <select id="fCarcaca"  data-vazio onchange="renderResults()" aria-label="Filtrar por carcaça"><option value="">— Carcaça —</option></select>
+    <select id="fRpm"      data-vazio onchange="renderResults()" aria-label="Filtrar por RPM"><option value="">— RPM —</option></select>
+    <select id="fEixo"     data-vazio onchange="renderResults()" aria-label="Filtrar por eixo"><option value="">— Eixo —</option></select>
+    <select id="fRedutora" data-vazio onchange="renderResults()" aria-label="Filtrar por redutora"><option value="">— Redutora —</option></select>
   </div>
-  <div class="list-label" id="listLabel"></div>
+  <div class="filtros-acao">
+    <span class="list-label" id="listLabel"></span>
+    <button class="btn btn-ghost" id="btnLimpar" onclick="limparFiltros()" style="display:none">Limpar filtros</button>
+  </div>
   <div id="motorList"></div>
 </div>
 
@@ -248,47 +243,92 @@
     clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
   }
 
-  function onMotoresChanged(){ updateCount(); renderResults(); }
+  function onMotoresChanged(){ updateCount(); popularFiltros(); renderResults(); }
   function updateCount(){ const c=motores.length; document.getElementById('headerCount').textContent = c+' motor'+(c!==1?'es':''); }
 
-  function onBusca(){ clearTimeout(_searchTimer); _searchTimer=setTimeout(renderResults,160); }
+  /* ── FILTROS: listas suspensas populadas pelos valores REAIS dos motores ── */
+  // valores únicos de um campo, ordenados (numérico-ciente por padrão)
+  function distintos(getter, cmp){
+    const set = new Set();
+    motores.forEach(m => { const v = getter(m); if (v!=null && String(v).trim()!=='') set.add(String(v).trim()); });
+    return [...set].sort(cmp || ((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true,sensitivity:'base'})));
+  }
+  // potência ordenada por cv (lê o 1º número do rótulo "X cv / Y kW")
+  const _cvDe = s => { const m=String(s).toLowerCase().replace(',', '.').match(/(\d+\.?\d*)/); return m?parseFloat(m[1]):Infinity; };
+  function distintosPot(){ return distintos(m=>m.potencia, (a,b)=>_cvDe(a)-_cvDe(b)); }
 
-  // casa um motor com a busca, conforme o campo escolhido
-  function matchCampo(m, campo, q){
-    if (campo==='redutora'){
-      if (!q) return !!m.redutora;                                   // só com redutora
-      return !!m.redutora && ('redutora redutor '+(m.reducao||'')).toLowerCase().includes(q);
-    }
-    if (!q) return true;
-    const mapa = {
-      carcaca:  [m.carcaca],
-      potencia: [m.potencia],
-      rpm:      [m.rpm, m.polos || getPolos(m.rpm)],
-      amp:      [m.amp],
-      eixo:     [m.eixo],
-    };
-    if (campo in mapa) return mapa[campo].filter(Boolean).join(' ').toLowerCase().includes(q);
-    // "tudo"
-    return [m.tag,m.carcaca,m.fabricante,m.potencia,m.rpm,m.polos,m.amp,m.eixo,m.obs,m.endereco,
-            (m.redutora?('redutora '+(m.reducao||'')):'')].filter(Boolean).join(' ').toLowerCase().includes(q);
+  // (re)preenche um <select> mantendo a opção escolhida, se ainda existir
+  function preencherSelect(id, valores, labelPadrao, extras){
+    const sel = document.getElementById(id);
+    const atual = sel.value;
+    let html = `<option value="">${labelPadrao}</option>`;
+    (extras||[]).forEach(e => { html += `<option value="${escapeHtml(e.v)}">${escapeHtml(e.l)}</option>`; });
+    valores.forEach(v => { html += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`; });
+    sel.innerHTML = html;
+    if ([...sel.options].some(o => o.value === atual)) sel.value = atual;
+  }
+
+  function popularFiltros(){
+    preencherSelect('fPotencia', distintosPot(),          '— Potência —');
+    preencherSelect('fCarcaca',  distintos(m=>m.carcaca), '— Carcaça —');
+    preencherSelect('fRpm',      distintos(m=>m.rpm),     '— RPM —');
+    preencherSelect('fEixo',     distintos(m=>m.eixo),    '— Eixo —');
+    preencherSelect('fRedutora', distintos(m=> m.redutora ? (m.reducao||'') : ''), '— Redutora —',
+                    [{v:'__com__',l:'Com redutora'},{v:'__sem__',l:'Sem redutora'}]);
+  }
+
+  function limparFiltros(){
+    ['fPotencia','fCarcaca','fRpm','fEixo','fRedutora'].forEach(id => { document.getElementById(id).value=''; });
+    renderResults();
+  }
+
+  // redutora: '' = todos | __com__ | __sem__ | <reducao específica>
+  function matchRedutora(m, f){
+    if (!f) return true;
+    if (f==='__com__') return !!m.redutora;
+    if (f==='__sem__') return !m.redutora;
+    return !!m.redutora && (m.reducao||'').trim() === f;
   }
 
   function renderResults(){
-    const campo = document.getElementById('campoBusca').value;
-    const q = (document.getElementById('searchInput').value||'').trim().toLowerCase();
-    const filtrar = !(campo==='tudo' && !q) && !(campo!=='redutora' && !q);
-    const filtered = filtrar ? motores.filter(m => matchCampo(m, campo, q)) : motores;
+    const fp=document.getElementById('fPotencia').value;
+    const fc=document.getElementById('fCarcaca').value;
+    const fr=document.getElementById('fRpm').value;
+    const fe=document.getElementById('fEixo').value;
+    const fred=document.getElementById('fRedutora').value;
+    // destaca em amarelo os selects com valor escolhido
+    [['fPotencia',fp],['fCarcaca',fc],['fRpm',fr],['fEixo',fe],['fRedutora',fred]].forEach(([id,v]) => {
+      const s=document.getElementById(id); if (v) s.removeAttribute('data-vazio'); else s.setAttribute('data-vazio','');
+    });
+    const algum = fp||fc||fr||fe||fred;
+    document.getElementById('btnLimpar').style.display = algum ? '' : 'none';
 
-    const lbl = document.getElementById('listLabel');
-    const n = filtered.length;
-    lbl.textContent = n ? `${n} motor${n!==1?'es':''} ${(q||campo==='redutora')?'encontrado'+(n!==1?'s':''):'no estoque'}` : '';
-
+    const lbl  = document.getElementById('listLabel');
     const list = document.getElementById('motorList');
-    if (!filtered.length){
-      const campoNome = {tudo:'',carcaca:'carcaça',potencia:'potência',rpm:'RPM',amp:'amperagem',eixo:'eixo',redutora:'redutora'}[campo]||'';
+
+    // sem nenhum filtro: NÃO lista tudo — pede pra escolher
+    if (!algum){
+      lbl.textContent = '';
+      list.innerHTML = `<div class="prompt-busca">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <p>Escolha um filtro acima — potência, carcaça, RPM, eixo ou redutora —<br>para encontrar os motores.</p></div>`;
+      return;
+    }
+
+    const filtered = motores.filter(m =>
+      (!fp || (m.potencia||'').trim()===fp) &&
+      (!fc || (m.carcaca||'').trim()===fc) &&
+      (!fr || (m.rpm||'').trim()===fr) &&
+      (!fe || (m.eixo||'').trim()===fe) &&
+      matchRedutora(m, fred));
+
+    const n = filtered.length;
+    lbl.textContent = `${n} motor${n!==1?'es':''} encontrado${n!==1?'s':''}`;
+
+    if (!n){
       list.innerHTML = `<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <p>${ q ? 'Nenhum motor para "'+escapeHtml(q)+'"'+(campoNome?(' em '+campoNome):'') : (campo==='redutora'?'Nenhum motor com redutora.':'Nenhum motor cadastrado ainda.') }</p></div>`;
+        <p>Nenhum motor com esse filtro.</p></div>`;
       return;
     }
 
